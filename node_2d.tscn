@@ -46,19 +46,20 @@ offset_bottom = 119.0
 
 [node name="MessageLog" type="RichTextLabel" parent="."]
 layout_mode = 0
-offset_top = 128.0
-offset_right = 500.0
-offset_bottom = 278.0
+offset_left = 512.0
+offset_top = 232.0
+offset_right = 1032.0
+offset_bottom = 432.0
 bbcode_enabled = true
 text = "[center]-- 系统日志 --[/center]"
 scroll_following = true
 
-[node name="MenuBar" type="HBoxContainer" parent="."]
+[node name="MenuBar" type="GridContainer" parent="."]
 layout_mode = 0
 offset_top = 450.0
 offset_right = 500.0
-offset_bottom = 500.0
-alignment = 1
+offset_bottom = 516.0
+columns = 4
 
 [node name="BtnProfile" type="Button" parent="MenuBar"]
 layout_mode = 2
@@ -85,20 +86,43 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "炼丹"
 
+[node name="BtnEquipment" type="Button" parent="MenuBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "装备"
+
+[node name="BtnMap" type="Button" parent="MenuBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "地图"
+
 [node name="PanelProfile" type="PanelContainer" parent="."]
 visible = false
 layout_mode = 0
-offset_top = 290.0
+offset_top = 230.0
 offset_right = 500.0
 offset_bottom = 440.0
 
-[node name="Label" type="Label" parent="PanelProfile"]
+[node name="VBox" type="VBoxContainer" parent="PanelProfile"]
 layout_mode = 2
-text = "个人信息"
+size_flags_vertical = 3
+
+[node name="Title" type="Label" parent="PanelProfile/VBox"]
+layout_mode = 2
+text = "-- 个人信息 --"
+
+[node name="ScrollList" type="ScrollContainer" parent="PanelProfile/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 3.0
+
+[node name="ItemList" type="VBoxContainer" parent="PanelProfile/VBox/ScrollList"]
+layout_mode = 2
+size_flags_horizontal = 3
 
 [node name="PanelSkills" type="PanelContainer" parent="."]
 layout_mode = 0
-offset_top = 290.0
+offset_top = 230.0
 offset_right = 500.0
 offset_bottom = 440.0
 
@@ -122,7 +146,7 @@ size_flags_horizontal = 3
 [node name="PanelInventory" type="PanelContainer" parent="."]
 visible = false
 layout_mode = 0
-offset_top = 290.0
+offset_top = 230.0
 offset_right = 500.0
 offset_bottom = 440.0
 
@@ -135,6 +159,7 @@ layout_mode = 2
 text = "-- 背包 --"
 
 [node name="ScrollList" type="ScrollContainer" parent="PanelInventory/VBox"]
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 3.0
@@ -146,7 +171,7 @@ size_flags_horizontal = 3
 [node name="PanelShop" type="PanelContainer" parent="."]
 visible = false
 layout_mode = 0
-offset_top = 290.0
+offset_top = 230.0
 offset_right = 500.0
 offset_bottom = 440.0
 
@@ -170,7 +195,7 @@ size_flags_horizontal = 3
 [node name="PanelAlchemy" type="PanelContainer" parent="."]
 visible = false
 layout_mode = 0
-offset_top = 290.0
+offset_top = 230.0
 offset_right = 500.0
 offset_bottom = 440.0
 
@@ -188,6 +213,54 @@ size_flags_vertical = 3
 size_flags_stretch_ratio = 3.0
 
 [node name="ItemList" type="VBoxContainer" parent="PanelAlchemy/VBox/ScrollList"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PanelEquipment" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 0
+offset_top = 230.0
+offset_right = 500.0
+offset_bottom = 440.0
+
+[node name="VBox" type="VBoxContainer" parent="PanelEquipment"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Title" type="Label" parent="PanelEquipment/VBox"]
+layout_mode = 2
+text = "-- 装备 --"
+
+[node name="ScrollList" type="ScrollContainer" parent="PanelEquipment/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 3.0
+
+[node name="ItemList" type="VBoxContainer" parent="PanelEquipment/VBox/ScrollList"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="PanelMap" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 0
+offset_top = 230.0
+offset_right = 500.0
+offset_bottom = 440.0
+
+[node name="VBox" type="VBoxContainer" parent="PanelMap"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Title" type="Label" parent="PanelMap/VBox"]
+layout_mode = 2
+text = "-- 选择地图 --"
+
+[node name="ScrollList" type="ScrollContainer" parent="PanelMap/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 3.0
+
+[node name="ItemList" type="VBoxContainer" parent="PanelMap/VBox/ScrollList"]
 layout_mode = 2
 size_flags_horizontal = 3
 
