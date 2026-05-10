@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://ccc5wvdt853pe"]
+[gd_scene load_steps=3 format=3 uid="uid://ccc5wvdt853pe"]
 
 [ext_resource type="Script" path="res://node_2d.gd" id="1_nk58v"]
+[ext_resource type="PackedScene" path="res://cave_panel.tscn" id="2_6ydai"]
 
 [node name="MainUI" type="Control"]
 layout_mode = 3
@@ -81,10 +82,15 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "商店"
 
-[node name="BtnAlchemy" type="Button" parent="MenuBar"]
+[node name="BtnCave" type="Button" parent="MenuBar"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "炼丹"
+text = "洞府"
+
+[node name="BtnTalents" type="Button" parent="MenuBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "天赋"
 
 [node name="BtnEquipment" type="Button" parent="MenuBar"]
 layout_mode = 2
@@ -159,7 +165,6 @@ layout_mode = 2
 text = "-- 背包 --"
 
 [node name="ScrollList" type="ScrollContainer" parent="PanelInventory/VBox"]
-visible = false
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 3.0
@@ -192,29 +197,8 @@ size_flags_stretch_ratio = 3.0
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="PanelAlchemy" type="PanelContainer" parent="."]
+[node name="PanelCave" parent="." instance=ExtResource("2_6ydai")]
 visible = false
-layout_mode = 0
-offset_top = 230.0
-offset_right = 500.0
-offset_bottom = 440.0
-
-[node name="VBox" type="VBoxContainer" parent="PanelAlchemy"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="Title" type="Label" parent="PanelAlchemy/VBox"]
-layout_mode = 2
-text = "-- 炼丹 --"
-
-[node name="ScrollList" type="ScrollContainer" parent="PanelAlchemy/VBox"]
-layout_mode = 2
-size_flags_vertical = 3
-size_flags_stretch_ratio = 3.0
-
-[node name="ItemList" type="VBoxContainer" parent="PanelAlchemy/VBox/ScrollList"]
-layout_mode = 2
-size_flags_horizontal = 3
 
 [node name="PanelEquipment" type="PanelContainer" parent="."]
 visible = false
@@ -264,9 +248,38 @@ size_flags_stretch_ratio = 3.0
 layout_mode = 2
 size_flags_horizontal = 3
 
+[node name="PanelTalents" type="PanelContainer" parent="."]
+visible = false
+layout_mode = 0
+offset_top = 230.0
+offset_right = 500.0
+offset_bottom = 440.0
+
+[node name="VBox" type="VBoxContainer" parent="PanelTalents"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Title" type="Label" parent="PanelTalents/VBox"]
+layout_mode = 2
+text = "-- 天赋 --"
+
+[node name="ScrollList" type="ScrollContainer" parent="PanelTalents/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 3.0
+
+[node name="ItemList" type="VBoxContainer" parent="PanelTalents/VBox/ScrollList"]
+layout_mode = 2
+size_flags_horizontal = 3
+
 [node name="TextureRect" type="TextureRect" parent="."]
 layout_mode = 0
 offset_left = 208.0
 offset_top = 248.0
 offset_right = 228.0
 offset_bottom = 268.0
+
+[node name="ReincarnateConfirm" type="ConfirmationDialog" parent="."]
+title = "兵解重修"
+visible = false
+dialog_text = "确定要兵解重修吗？\n将失去所有修为、功法、丹药、装备，\n保留灵根和天赋。\n\n要求：元婴初期以上"
