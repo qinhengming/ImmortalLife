@@ -15,9 +15,19 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 [application]
 
 config/name="修仙人生"
-run/main_scene="res://node_2d.tscn"
+run/main_scene="res://scenes/main_ui.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 config/icon="res://icon.svg"
+
+[display]
+
+window/size/viewport_width=390
+window/size/viewport_height=844
+window/size/mode=2
+window/size/transparent=false
+window/dpi/allow_hidpi=true
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 
 [rendering]
 

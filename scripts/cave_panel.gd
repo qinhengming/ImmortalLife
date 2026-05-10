@@ -13,6 +13,7 @@ signal upgrade_cave_requested()
 signal building_action_requested(bid: String)
 signal craft_pill_requested(recipe_name: String)
 signal use_pill_requested(pill_name: String)
+signal back_requested()
 
 const BUILDING_DEFS = {
 	'alchemy_furnace': {
@@ -287,3 +288,6 @@ func _build_alchemy_section(list: VBoxContainer):
 			btn.pressed.connect(func(): use_pill_requested.emit(pn))
 			row.add_child(btn)
 			list.add_child(row)
+
+func _ready():
+	$VBox/TopBar/BtnBack.pressed.connect(func(): back_requested.emit())

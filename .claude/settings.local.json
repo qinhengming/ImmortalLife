@@ -9,7 +9,11 @@
       "Bash(python3)",
       "Bash(python -c \"exec\\(open\\('_fix_garbled.py',encoding='utf-8'\\).read\\(\\)\\)\")",
       "Bash(python -c \"exec\\(open\\('_fix_garbled2.py',encoding='utf-8'\\).read\\(\\)\\)\")",
-      "Bash(python -c ' *)"
+      "Bash(python -c ' *)",
+      "Bash(git mv *)",
+      "Bash(ls *.godot)",
+      "Bash(which godot *)",
+      "Bash(ls \"C:/Program Files/Godot\"/**/godot*)"
     ]
   }
 }

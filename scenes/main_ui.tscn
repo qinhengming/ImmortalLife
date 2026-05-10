@@ -1,0 +1,193 @@
+[gd_scene format=3 uid="uid://ccc5wvdt853pe"]
+
+[ext_resource type="Script" uid="uid://b5tn5j50gnluy" path="res://scripts/main_ui.gd" id="1_nk58v"]
+[ext_resource type="PackedScene" uid="uid://cave_panel" path="res://scenes/cave_panel.tscn" id="2_6ydai"]
+[ext_resource type="PackedScene" uid="uid://profile_panel" path="res://scenes/profile_panel.tscn" id="3_aonxb"]
+[ext_resource type="PackedScene" uid="uid://skills_panel" path="res://scenes/skills_panel.tscn" id="4_7byyt"]
+[ext_resource type="PackedScene" uid="uid://inventory_panel" path="res://scenes/inventory_panel.tscn" id="5_k4bwc"]
+[ext_resource type="PackedScene" uid="uid://shop_panel" path="res://scenes/shop_panel.tscn" id="6_0dsmd"]
+[ext_resource type="PackedScene" uid="uid://equipment_panel" path="res://scenes/equipment_panel.tscn" id="7_l6qih"]
+[ext_resource type="PackedScene" uid="uid://map_panel" path="res://scenes/map_panel.tscn" id="8_24xml"]
+[ext_resource type="PackedScene" uid="uid://talents_panel" path="res://scenes/talents_panel.tscn" id="9_jf41d"]
+
+[node name="MainUI" type="Control" unique_id=1721037006]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_nk58v")
+
+[node name="Label" type="Label" parent="." unique_id=1494098734]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 12.0
+offset_top = 4.0
+offset_right = -12.0
+offset_bottom = 22.0
+theme_override_font_sizes/font_size = 15
+
+[node name="Label2" type="Label" parent="." unique_id=1199942353]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 12.0
+offset_top = 24.0
+offset_right = -12.0
+offset_bottom = 42.0
+theme_override_font_sizes/font_size = 15
+
+[node name="Label3" type="Label" parent="." unique_id=1754529386]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 12.0
+offset_top = 44.0
+offset_right = -12.0
+offset_bottom = 62.0
+theme_override_font_sizes/font_size = 15
+
+[node name="Label4" type="Label" parent="." unique_id=1021501909]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 12.0
+offset_top = 64.0
+offset_right = -12.0
+offset_bottom = 82.0
+theme_override_font_sizes/font_size = 15
+
+[node name="Label5" type="Label" parent="." unique_id=447641647]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 12.0
+offset_top = 84.0
+offset_right = -12.0
+offset_bottom = 102.0
+theme_override_font_sizes/font_size = 15
+
+[node name="MessageLog" type="RichTextLabel" parent="." unique_id=1737071118]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = 108.0
+offset_right = -6.0
+offset_bottom = -108.0
+bbcode_enabled = true
+text = "[center]-- 系统日志 --[/center]"
+scroll_following = true
+
+[node name="MenuBar" type="GridContainer" parent="." unique_id=566777009]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = -104.0
+offset_right = -4.0
+offset_bottom = -4.0
+columns = 4
+
+[node name="BtnProfile" type="Button" parent="MenuBar" unique_id=836411321]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 14
+text = "个人信息"
+
+[node name="BtnSkills" type="Button" parent="MenuBar" unique_id=1851114094]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 14
+text = "功法"
+
+[node name="BtnInventory" type="Button" parent="MenuBar" unique_id=305462763]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 14
+text = "背包"
+
+[node name="BtnShop" type="Button" parent="MenuBar" unique_id=317308158]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 14
+text = "商店"
+
+[node name="BtnCave" type="Button" parent="MenuBar" unique_id=444767014]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 14
+text = "洞府"
+
+[node name="BtnTalents" type="Button" parent="MenuBar" unique_id=124505569]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 14
+text = "天赋"
+
+[node name="BtnEquipment" type="Button" parent="MenuBar" unique_id=261735353]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 14
+text = "装备"
+
+[node name="BtnMap" type="Button" parent="MenuBar" unique_id=489626492]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 14
+text = "地图"
+
+[node name="PanelProfile" parent="." instance=ExtResource("3_aonxb")]
+visible = false
+
+[node name="PanelSkills" parent="." instance=ExtResource("4_7byyt")]
+visible = false
+
+[node name="PanelInventory" parent="." instance=ExtResource("5_k4bwc")]
+visible = false
+
+[node name="PanelShop" parent="." instance=ExtResource("6_0dsmd")]
+visible = false
+
+[node name="PanelCave" parent="." instance=ExtResource("2_6ydai")]
+visible = false
+
+[node name="PanelEquipment" parent="." instance=ExtResource("7_l6qih")]
+visible = false
+
+[node name="PanelMap" parent="." instance=ExtResource("8_24xml")]
+visible = false
+
+[node name="PanelTalents" parent="." instance=ExtResource("9_jf41d")]
+visible = false
+
+[node name="TextureRect" type="TextureRect" parent="." unique_id=570458067]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_top = 4.0
+offset_right = -12.0
+offset_bottom = 32.0
+
+[node name="ReincarnateConfirm" type="ConfirmationDialog" parent="." unique_id=1089348412]
+title = "兵解重修"
+dialog_text = "确定要兵解重修吗？
+将失去所有修为、功法、丹药、装备，
+保留灵根和天赋。
+
+要求：元婴初期以上"

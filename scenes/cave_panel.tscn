@@ -1,0 +1,47 @@
+[gd_scene load_steps=2 format=3 uid="uid://cave_panel"]
+
+[ext_resource type="Script" path="res://scripts/cave_panel.gd" id="1_8ao3q"]
+
+[node name="CavePanel" type="PanelContainer"]
+visible = false
+layout_mode = 1
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0
+offset_top = 0
+offset_right = 0
+offset_bottom = 0
+script = ExtResource("1_8ao3q")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="TopBar" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BtnBack" type="Button" parent="VBox/TopBar"]
+layout_mode = 2
+text = "← 返回"
+theme_override_font_sizes/font_size = 14
+
+[node name="Title" type="Label" parent="VBox/TopBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+horizontal_alignment = 1
+text = "-- 洞府 --"
+theme_override_font_sizes/font_size = 16
+
+[node name="Separator" type="HSeparator" parent="VBox"]
+
+[node name="ScrollList" type="ScrollContainer" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 3.0
+
+[node name="ItemList" type="VBoxContainer" parent="VBox/ScrollList"]
+layout_mode = 2
+size_flags_horizontal = 3
