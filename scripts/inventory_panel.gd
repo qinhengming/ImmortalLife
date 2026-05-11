@@ -16,6 +16,19 @@ var _shop_recipes: Array = []
 var _realms: Array = []
 var _sell_ratio: float = 0.5
 var _realm_level: int = 1
+var _current_cat: String = "all"
+
+const TECHNIQUE_ID_MAP = {
+	"breathing_art": "吐纳术",
+	"spirit_gathering": "聚灵诀",
+	"wind_control": "御风诀",
+	"burning_heaven": "焚天决",
+	"ice_heart": "冰心诀",
+	"celestial_art": "天罡功",
+}
+
+func _get_tech_name(tid: String) -> String:
+	return TECHNIQUE_ID_MAP.get(tid, tid)
 
 func set_state(data: Dictionary):
 	_inventory = data.get("inventory", []).duplicate()
@@ -56,177 +69,221 @@ func _format_num(n) -> String:
 	return str(n)
 
 func refresh():
-	var list = $VBox/ScrollList/ItemList
+	var list = $VBox/HBox/ScrollList/ItemList
 	for c in list.get_children():
 		list.remove_child(c)
 		c.queue_free()
 
-	# === 功法物品 ===
-	if not _inventory.is_empty():
-		var skill_title = Label.new()
-		skill_title.text = "=== 功法 ==="
-		skill_title.add_theme_font_size_override("font_size", 12)
-		skill_title.add_theme_color_override("font_color", Color(0.6, 0.6, 0.8))
-		list.add_child(skill_title)
+	if _current_cat == "all" or _current_cat == "skills":
+		_render_skills(list)
+	if _current_cat == "all" or _current_cat == "pills":
+		_render_pills(list)
+	if _current_cat == "all" or _current_cat == "equip":
+		_render_equipment(list)
 
-		for i in range(_inventory.size()):
-			var skill_name = _inventory[i]
-			var skill_data = null
-			for s in _shop_skills:
-				if s.get("name", "") == skill_name:
-					skill_data = s
-					break
+	var has_content = false
+	if _current_cat == "all":
+		has_content = not (_inventory.is_empty() and _pill_inventory.is_empty() and _equipment_inventory.is_empty())
+	elif _current_cat == "skills":
+		has_content = not _inventory.is_empty()
+	elif _current_cat == "pills":
+		for pill_name in _pill_inventory:
+			if _pill_inventory[pill_name] > 0:
+				has_content = true
+				break
+	elif _current_cat == "equip":
+		has_content = not _equipment_inventory.is_empty()
 
-			var row = HBoxContainer.new()
-			var info = Label.new()
-			info.text = skill_name
-			info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			info.add_theme_font_size_override("font_size", 13)
-			if skill_data:
-				info.add_theme_color_override("font_color", skill_data.get("color", Color(0.95, 0.95, 1.0)))
-			row.add_child(info)
+	if not has_content:
+		var empty = Label.new()
+		empty.text = "空空如也"
+		empty.add_theme_font_size_override("font_size", 13)
+		empty.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+		list.add_child(empty)
 
-			var realm_ok = skill_data != null and _realm_level >= skill_data.get("min_realm", 1)
-			if skill_data and not realm_ok:
-				var req_label = Label.new()
-				var min_realm_idx = skill_data.get("min_realm", 1) - 1
-				if min_realm_idx >= 0 and min_realm_idx < _realms.size():
-					req_label.text = "(" + _realms[min_realm_idx].get("name", "未知") + ")"
-				else:
-					req_label.text = "(境界不足)"
-				req_label.add_theme_color_override("font_color", skill_data.get("color", Color(0.6, 0.6, 0.8)))
-				req_label.add_theme_font_size_override("font_size", 10)
-				row.add_child(req_label)
+func _render_skills(list: VBoxContainer):
+	if _inventory.is_empty():
+		return
+	var title = Label.new()
+	title.text = "── 功法 ──"
+	title.add_theme_font_size_override("font_size", 12)
+	title.add_theme_color_override("font_color", Color(0.6, 0.6, 0.8))
+	list.add_child(title)
 
-			var use_btn = Button.new()
-			use_btn.text = "使用"
-			if not realm_ok:
-				use_btn.disabled = true
-			var idx = i
-			use_btn.pressed.connect(func(): use_skill_requested.emit(idx))
-			row.add_child(use_btn)
+	for i in range(_inventory.size()):
+		var tid = _inventory[i]
+		var skill_name = _get_tech_name(tid)
+		var skill_data = null
+		for s in _shop_skills:
+			if s.get("name", "") == skill_name:
+				skill_data = s
+				break
 
-			if skill_data != null:
-				var sell_btn = Button.new()
-				var sell_price = int(skill_data.get("price", 0) * _sell_ratio)
-				sell_btn.text = "出售 +" + _format_num(sell_price) + "灵"
-				sell_btn.pressed.connect(func(): sell_skill_requested.emit(idx))
-				row.add_child(sell_btn)
+		var row = HBoxContainer.new()
+		var info = Label.new()
+		info.text = skill_name
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info.add_theme_font_size_override("font_size", 13)
+		if skill_data:
+			info.add_theme_color_override("font_color", skill_data.get("color", Color(0.95, 0.95, 1.0)))
+		row.add_child(info)
 
-			list.add_child(row)
+		var realm_ok = skill_data != null and _realm_level >= skill_data.get("min_realm", 1)
+		if skill_data and not realm_ok:
+			var req_label = Label.new()
+			var min_realm_idx = skill_data.get("min_realm", 1) - 1
+			if min_realm_idx >= 0 and min_realm_idx < _realms.size():
+				req_label.text = "(" + _realms[min_realm_idx].get("name", "未知") + ")"
+			else:
+				req_label.text = "(境界不足)"
+			req_label.add_theme_color_override("font_color", skill_data.get("color", Color(0.6, 0.6, 0.8)))
+			req_label.add_theme_font_size_override("font_size", 10)
+			row.add_child(req_label)
 
-	# === 丹药 ===
+		var use_btn = Button.new()
+		use_btn.text = "使用"
+		if not realm_ok:
+			use_btn.disabled = true
+		var idx = i
+		use_btn.pressed.connect(func(): use_skill_requested.emit(idx))
+		row.add_child(use_btn)
+
+		if skill_data != null:
+			var sell_btn = Button.new()
+			var sell_price = int(skill_data.get("price", 0) * _sell_ratio)
+			sell_btn.text = "出售 +" + _format_num(sell_price) + "灵"
+			sell_btn.pressed.connect(func(): sell_skill_requested.emit(idx))
+			row.add_child(sell_btn)
+
+		list.add_child(row)
+
+func _render_pills(list: VBoxContainer):
 	var has_pills = false
 	for pill_name in _pill_inventory:
 		if _pill_inventory[pill_name] > 0:
 			has_pills = true
 			break
+	if not has_pills:
+		return
 
-	if has_pills:
-		var pill_title = Label.new()
-		pill_title.text = "=== 丹药 ==="
-		pill_title.add_theme_font_size_override("font_size", 12)
-		pill_title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.4))
-		list.add_child(pill_title)
+	var title = Label.new()
+	title.text = "── 丹药 ──"
+	title.add_theme_font_size_override("font_size", 12)
+	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.4))
+	list.add_child(title)
 
-		for pill_name in _pill_inventory:
-			var count = _pill_inventory[pill_name]
-			if count <= 0:
-				continue
+	for pill_name in _pill_inventory:
+		var count = _pill_inventory[pill_name]
+		if count <= 0:
+			continue
 
-			var row = HBoxContainer.new()
+		var row = HBoxContainer.new()
 
-			var recipe_data = null
-			for r in _shop_recipes:
-				if r.get("name", "") == pill_name:
-					recipe_data = r
-					break
+		var recipe_data = null
+		for r in _shop_recipes:
+			if r.get("name", "") == pill_name:
+				recipe_data = r
+				break
 
-			var info = Label.new()
-			info.text = pill_name + " x" + str(count)
-			info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			info.add_theme_font_size_override("font_size", 13)
-			row.add_child(info)
+		var info = Label.new()
+		info.text = pill_name + " x" + str(count)
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info.add_theme_font_size_override("font_size", 13)
+		row.add_child(info)
 
-			var use_btn = Button.new()
-			use_btn.text = "使用"
-			var pn = pill_name
-			use_btn.pressed.connect(func(): use_pill_requested.emit(pn))
-			row.add_child(use_btn)
+		var use_btn = Button.new()
+		use_btn.text = "使用"
+		var pn = pill_name
+		use_btn.pressed.connect(func(): use_pill_requested.emit(pn))
+		row.add_child(use_btn)
 
-			if recipe_data != null:
-				var sell_btn = Button.new()
-				var sell_price = int(recipe_data.get("price", 0) * _sell_ratio)
-				sell_btn.text = "出售 +" + _format_num(sell_price) + "灵"
-				sell_btn.pressed.connect(func(): sell_pill_requested.emit(pn))
-				row.add_child(sell_btn)
-
-			list.add_child(row)
-
-	# === 装备 ===
-	if not _equipment_inventory.is_empty():
-		var equip_title = Label.new()
-		equip_title.text = "=== 装备 ==="
-		equip_title.add_theme_font_size_override("font_size", 12)
-		equip_title.add_theme_color_override("font_color", Color(0.5, 0.8, 0.9))
-		list.add_child(equip_title)
-
-		for ei in range(_equipment_inventory.size()):
-			var item = _equipment_inventory[ei]
-			var row = HBoxContainer.new()
-
-			var info = Label.new()
-			info.text = item.get("name", "未知装备")
-			info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			info.add_theme_font_size_override("font_size", 13)
-
-			var slot_color = Color(0.95, 0.95, 1.0)
-			match item.get("slot", ""):
-				"weapon":
-					slot_color = Color(1, 0.6, 0.4)
-				"armor":
-					slot_color = Color(0.4, 0.8, 1)
-				"accessory":
-					slot_color = Color(0.9, 0.7, 1)
-				"artifact":
-					slot_color = Color(1, 0.84, 0)
-			info.add_theme_color_override("font_color", slot_color)
-			row.add_child(info)
-
-			var stat_parts = []
-			if item.get("atk_bonus", 0) > 0:
-				stat_parts.append("攻击+" + str(item["atk_bonus"]))
-			if item.get("def_bonus", 0) > 0:
-				stat_parts.append("防御+" + str(item["def_bonus"]))
-			if item.get("mana_bonus", 0) > 0:
-				stat_parts.append("灵+" + str(item["mana_bonus"]))
-			var stat_label = Label.new()
-			stat_label.text = " ".join(stat_parts)
-			stat_label.add_theme_font_size_override("font_size", 11)
-			stat_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.7))
-			row.add_child(stat_label)
-
-			var equip_btn = Button.new()
-			equip_btn.text = "装备"
-			var eidx = ei
-			equip_btn.pressed.connect(func(): equip_item_requested.emit(eidx))
-			row.add_child(equip_btn)
-
+		if recipe_data != null:
 			var sell_btn = Button.new()
-			var sell_price = int(item.get("price", 0) * _sell_ratio)
+			var sell_price = int(recipe_data.get("price", 0) * _sell_ratio)
 			sell_btn.text = "出售 +" + _format_num(sell_price) + "灵"
-			sell_btn.pressed.connect(func(): sell_equipment_requested.emit(eidx))
+			sell_btn.pressed.connect(func(): sell_pill_requested.emit(pn))
 			row.add_child(sell_btn)
 
-			list.add_child(row)
+		list.add_child(row)
 
-	# === 空背包提示 ===
-	if _inventory.is_empty() and not has_pills and _equipment_inventory.is_empty():
-		var empty = Label.new()
-		empty.text = "背包为空"
-		empty.add_theme_font_size_override("font_size", 13)
-		empty.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
-		list.add_child(empty)
+func _render_equipment(list: VBoxContainer):
+	if _equipment_inventory.is_empty():
+		return
+
+	var title = Label.new()
+	title.text = "── 装备 ──"
+	title.add_theme_font_size_override("font_size", 12)
+	title.add_theme_color_override("font_color", Color(0.5, 0.8, 0.9))
+	list.add_child(title)
+
+	for ei in range(_equipment_inventory.size()):
+		var item = _equipment_inventory[ei]
+		var row = HBoxContainer.new()
+
+		var info = Label.new()
+		info.text = item.get("name", "未知装备")
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		info.add_theme_font_size_override("font_size", 13)
+
+		var slot_color = Color(0.95, 0.95, 1.0)
+		match item.get("slot", ""):
+			"weapon":
+				slot_color = Color(1, 0.6, 0.4)
+			"armor":
+				slot_color = Color(0.4, 0.8, 1)
+			"accessory":
+				slot_color = Color(0.9, 0.7, 1)
+			"artifact":
+				slot_color = Color(1, 0.84, 0)
+		info.add_theme_color_override("font_color", slot_color)
+		row.add_child(info)
+
+		var stat_parts = []
+		if item.get("atk_bonus", 0) > 0:
+			stat_parts.append("攻击+" + str(item["atk_bonus"]))
+		if item.get("def_bonus", 0) > 0:
+			stat_parts.append("防御+" + str(item["def_bonus"]))
+		if item.get("mana_bonus", 0) > 0:
+			stat_parts.append("灵+" + str(item["mana_bonus"]))
+		var stat_label = Label.new()
+		stat_label.text = " ".join(stat_parts)
+		stat_label.add_theme_font_size_override("font_size", 11)
+		stat_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.7))
+		row.add_child(stat_label)
+
+		var equip_btn = Button.new()
+		equip_btn.text = "装备"
+		var eidx = ei
+		equip_btn.pressed.connect(func(): equip_item_requested.emit(eidx))
+		row.add_child(equip_btn)
+
+		var sell_btn = Button.new()
+		var sell_price = int(item.get("price", 0) * _sell_ratio)
+		sell_btn.text = "出售 +" + _format_num(sell_price) + "灵"
+		sell_btn.pressed.connect(func(): sell_equipment_requested.emit(eidx))
+		row.add_child(sell_btn)
+
+		list.add_child(row)
+
+func _set_category(cat: String):
+	_current_cat = cat
+	var menu = $VBox/HBox/LeftMenu
+	for btn in menu.get_children():
+		btn.button_pressed = false
+	match cat:
+		"all":
+			menu.get_node("BtnAll").button_pressed = true
+		"skills":
+			menu.get_node("BtnSkills").button_pressed = true
+		"pills":
+			menu.get_node("BtnPills").button_pressed = true
+		"equip":
+			menu.get_node("BtnEquip").button_pressed = true
+	refresh()
 
 func _ready():
 	$VBox/TopBar/BtnBack.pressed.connect(func(): back_requested.emit())
+	$VBox/HBox/LeftMenu/BtnAll.pressed.connect(func(): _set_category("all"))
+	$VBox/HBox/LeftMenu/BtnSkills.pressed.connect(func(): _set_category("skills"))
+	$VBox/HBox/LeftMenu/BtnPills.pressed.connect(func(): _set_category("pills"))
+	$VBox/HBox/LeftMenu/BtnEquip.pressed.connect(func(): _set_category("equip"))

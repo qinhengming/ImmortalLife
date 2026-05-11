@@ -24,10 +24,13 @@ config/icon="res://icon.svg"
 window/size/viewport_width=390
 window/size/viewport_height=844
 window/size/mode=2
-window/size/transparent=false
-window/dpi/allow_hidpi=true
+window/size/mode.editor=0
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/godot_mcp/plugin.cfg")
 
 [rendering]
 

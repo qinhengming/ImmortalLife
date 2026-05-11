@@ -7,6 +7,12 @@ var realm_level: int = 1
 var offline_earnings: float = 0.0
 var save_timer: float = 0.0
 var max_log_lines: int = 100
+
+# 打坐冥想
+var meditation_timer: float = 0.0
+var meditation_cycle_time: float = 3.0
+var meditation_cycles: int = 0
+var pending_energy: float = 0.0
 var player_name: String = ""
 var spirit_root: Dictionary = {}
 var age: int = 16
@@ -54,14 +60,18 @@ var equipped_items = {
 # 出售价格比例
 const SELL_RATIO: float = 0.5
 
-# 背包：已购买的功法列表（存储功法名称）
+# 背包：已购买的功法秘笈（存储tech_id）
 var inventory: Array = []
 
 # 装备背包
 var equipment_inventory: Array = []
 
-# 已学会的功法列表
-var learned_skills: Array = []
+# 已学会的功法 {tech_id: {level: int}}
+var learned_techniques: Dictionary = {}
+# 正在参悟的功法ID（同一时间只能参悟一门）
+var comprehending_tech_id: String = ""
+var comprehension_progress: float = 0.0
+var comprehension_time_total: float = 0.0
 
 # 商店丹方列表
 var shop_recipes = [
@@ -159,6 +169,115 @@ const TALENT_DEFS = {
 const EQUIPMENT_SLOTS = ['weapon', 'armor', 'accessory', 'artifact']
 const EQUIPMENT_SLOT_NAMES = {'weapon': '武器', 'armor': '防具', 'accessory': '饰品', 'artifact': '法宝'}
 
+const TECHNIQUE_GRADES = ["黄级", "玄级", "地级", "天级", "圣级"]
+const TECHNIQUE_GRADE_COLORS = [
+	Color(0.9, 0.85, 0.4),
+	Color(0.35, 0.75, 0.9),
+	Color(0.9, 0.55, 0.3),
+	Color(0.65, 0.35, 0.95),
+	Color(1.0, 0.25, 0.2),
+]
+const TECHNIQUE_GRADE_MAX_LEVELS = [3, 5, 7, 9, 12]
+
+const TECHNIQUE_DEFS = {
+	"breathing_art": {
+		"name": "吐纳术", "grade": 1, "desc": "修仙入门基础功法",
+		"price": 50, "min_realm": 1,
+		"color": Color(0.20, 0.85, 0.55),
+		"levels": [
+			{"time": 25, "mana_pct": 0.10, "atk": 0, "def": 0, "hp": 0, "effect": ""},
+			{"time": 35, "mana_pct": 0.05, "atk": 0, "def": 0, "hp": 0, "effect": ""},
+			{"time": 50, "mana_pct": 0.08, "atk": 0, "def": 0, "hp": 10, "effect": "灵气恢复+3"},
+		],
+	},
+	"spirit_gathering": {
+		"name": "聚灵诀", "grade": 2, "desc": "汇聚天地灵气之法",
+		"price": 200, "min_realm": 2,
+		"color": Color(0.15, 0.80, 0.55),
+		"levels": [
+			{"time": 40, "mana_pct": 0.15, "atk": 0, "def": 0, "hp": 0, "effect": ""},
+			{"time": 55, "mana_pct": 0.10, "atk": 0, "def": 0, "hp": 0, "effect": ""},
+			{"time": 70, "mana_pct": 0.10, "atk": 0, "def": 0, "hp": 20, "effect": "HP上限+20"},
+			{"time": 90, "mana_pct": 0.10, "atk": 0, "def": 0, "hp": 0, "effect": ""},
+			{"time": 110, "mana_pct": 0.15, "atk": 0, "def": 8, "hp": 0, "effect": "防御+8"},
+		],
+	},
+	"wind_control": {
+		"name": "御风诀", "grade": 3, "desc": "风属性功法，身法灵动",
+		"price": 800, "min_realm": 3,
+		"color": Color(0.10, 0.75, 0.55),
+		"levels": [
+			{"time": 55, "mana_pct": 0.20, "atk": 0, "def": 0, "hp": 0, "effect": ""},
+			{"time": 70, "mana_pct": 0.12, "atk": 0, "def": 0, "hp": 0, "effect": ""},
+			{"time": 85, "mana_pct": 0.12, "atk": 0, "def": 0, "hp": 0, "effect": ""},
+			{"time": 100, "mana_pct": 0.12, "atk": 12, "def": 0, "hp": 0, "effect": "攻击+12"},
+			{"time": 120, "mana_pct": 0.12, "atk": 0, "def": 0, "hp": 0, "effect": ""},
+			{"time": 140, "mana_pct": 0.15, "atk": 0, "def": 0, "hp": 0, "effect": ""},
+			{"time": 160, "mana_pct": 0.18, "atk": 0, "def": 5, "hp": 30, "effect": "修炼速度额外+10%"},
+		],
+	},
+	"burning_heaven": {
+		"name": "焚天决", "grade": 4, "desc": "火属性至强功法，焚尽八荒",
+		"price": 3000, "min_realm": 4,
+		"color": Color(1.0, 0.45, 0.2),
+		"levels": [
+			{"time": 70, "mana_pct": 0.25, "atk": 3, "def": 0, "hp": 0, "effect": ""},
+			{"time": 90, "mana_pct": 0.15, "atk": 0, "def": 0, "hp": 0, "effect": ""},
+			{"time": 110, "mana_pct": 0.15, "atk": 5, "def": 0, "hp": 0, "effect": ""},
+			{"time": 130, "mana_pct": 0.15, "atk": 0, "def": 0, "hp": 30, "effect": ""},
+			{"time": 150, "mana_pct": 0.20, "atk": 15, "def": 0, "hp": 0, "effect": "攻击+15"},
+			{"time": 170, "mana_pct": 0.15, "atk": 0, "def": 0, "hp": 0, "effect": ""},
+			{"time": 190, "mana_pct": 0.15, "atk": 5, "def": 5, "hp": 0, "effect": ""},
+			{"time": 210, "mana_pct": 0.20, "atk": 0, "def": 0, "hp": 50, "effect": ""},
+			{"time": 240, "mana_pct": 0.30, "atk": 20, "def": 10, "hp": 0, "effect": "暴击率+10%，修炼速度额外+15%"},
+		],
+	},
+	"ice_heart": {
+		"name": "冰心诀", "grade": 4, "desc": "冰属性功法，心如寒冰",
+		"price": 10000, "min_realm": 7,
+		"color": Color(0.30, 0.85, 1.0),
+		"levels": [
+			{"time": 80, "mana_pct": 0.30, "atk": 0, "def": 3, "hp": 0, "effect": ""},
+			{"time": 100, "mana_pct": 0.20, "atk": 0, "def": 0, "hp": 0, "effect": ""},
+			{"time": 120, "mana_pct": 0.20, "atk": 0, "def": 5, "hp": 20, "effect": ""},
+			{"time": 140, "mana_pct": 0.20, "atk": 0, "def": 0, "hp": 0, "effect": ""},
+			{"time": 160, "mana_pct": 0.25, "atk": 0, "def": 12, "hp": 0, "effect": "防御+12"},
+			{"time": 180, "mana_pct": 0.20, "atk": 0, "def": 0, "hp": 30, "effect": ""},
+			{"time": 200, "mana_pct": 0.20, "atk": 5, "def": 5, "hp": 0, "effect": ""},
+			{"time": 220, "mana_pct": 0.25, "atk": 0, "def": 0, "hp": 50, "effect": ""},
+			{"time": 250, "mana_pct": 0.35, "atk": 10, "def": 15, "hp": 0, "effect": "突破灵气消耗-10%"},
+		],
+	},
+	"celestial_art": {
+		"name": "天罡功", "grade": 5, "desc": "圣级功法，雷属性至强",
+		"price": 50000, "min_realm": 10,
+		"color": Color(0.75, 0.30, 0.95),
+		"levels": [
+			{"time": 100, "mana_pct": 0.40, "atk": 8, "def": 3, "hp": 10, "effect": ""},
+			{"time": 130, "mana_pct": 0.25, "atk": 0, "def": 0, "hp": 0, "effect": ""},
+			{"time": 160, "mana_pct": 0.25, "atk": 10, "def": 0, "hp": 0, "effect": ""},
+			{"time": 190, "mana_pct": 0.30, "atk": 0, "def": 8, "hp": 30, "effect": ""},
+			{"time": 220, "mana_pct": 0.30, "atk": 0, "def": 0, "hp": 50, "effect": ""},
+			{"time": 250, "mana_pct": 0.30, "atk": 25, "def": 10, "hp": 0, "effect": "攻击+25 防御+10"},
+			{"time": 280, "mana_pct": 0.35, "atk": 0, "def": 0, "hp": 80, "effect": ""},
+			{"time": 310, "mana_pct": 0.35, "atk": 10, "def": 10, "hp": 0, "effect": ""},
+			{"time": 340, "mana_pct": 0.40, "atk": 0, "def": 0, "hp": 100, "effect": ""},
+			{"time": 370, "mana_pct": 0.40, "atk": 15, "def": 5, "hp": 0, "effect": ""},
+			{"time": 400, "mana_pct": 0.50, "atk": 10, "def": 10, "hp": 120, "effect": ""},
+			{"time": 450, "mana_pct": 0.60, "atk": 40, "def": 20, "hp": 0, "effect": "全修炼速度x2，暴击率+15%"},
+		],
+	},
+}
+
+const TECHNIQUE_ID_MAP = {
+	"吐纳术": "breathing_art",
+	"聚灵诀": "spirit_gathering",
+	"御风诀": "wind_control",
+	"焚天决": "burning_heaven",
+	"冰心诀": "ice_heart",
+	"天罡功": "celestial_art",
+}
+
 # 境界列表，按顺序排列
 var realms = [
 	{'name': '练气一层', 'cost': 100, 'mana_bonus': 0.5, 'mana_bonus_pct': 0.05, 'color': Color(0.20, 0.85, 0.55)},
@@ -228,7 +347,7 @@ var maps = [
 # ==================== 核心辅助函数 ====================
 
 func get_player_atk() -> float:
-	var atk = realm_level * 15.0
+	var atk = realm_level * 15.0 + get_technique_atk_bonus()
 	for s in EQUIPMENT_SLOTS:
 		var ei = equipped_items[s]
 		if ei != null:
@@ -238,7 +357,7 @@ func get_player_atk() -> float:
 	return atk
 
 func get_player_def() -> float:
-	var def = realm_level * 10.0
+	var def = realm_level * 10.0 + get_technique_def_bonus()
 	for s in EQUIPMENT_SLOTS:
 		var ei = equipped_items[s]
 		if ei != null:
@@ -246,9 +365,153 @@ func get_player_def() -> float:
 	return def
 
 func update_max_hp():
-	player_max_hp = 100.0 + realm_level * 50.0
+	player_max_hp = 100.0 + realm_level * 50.0 + get_technique_hp_bonus()
 	if player_hp > player_max_hp:
 		player_hp = player_max_hp
+
+func _process_comprehension(delta: float):
+	if comprehending_tech_id == "":
+		return
+	if not TECHNIQUE_DEFS.has(comprehending_tech_id):
+		comprehending_tech_id = ""
+		return
+	var tech = learned_techniques.get(comprehending_tech_id, {})
+	var current_level = tech.get("level", 0)
+	var defs = TECHNIQUE_DEFS[comprehending_tech_id]
+	if current_level >= defs.levels.size():
+		comprehending_tech_id = ""
+		comprehension_progress = 0.0
+		return
+	var lib_bonus = 1.0 + 0.15 * cave_buildings.get("library", {}).get("level", 0)
+	comprehension_progress += delta * lib_bonus
+	if comprehension_progress >= comprehension_time_total:
+		_complete_comprehension()
+
+func _complete_comprehension():
+	var tid = comprehending_tech_id
+	var tech = learned_techniques.get(tid, {})
+	var new_level = tech.get("level", 0) + 1
+	tech["level"] = new_level
+	learned_techniques[tid] = tech
+	var defs = TECHNIQUE_DEFS[tid]
+	var lvl_data = defs.levels[new_level - 1]
+	var effect_text = ""
+	if lvl_data.effect != "":
+		effect_text = "，觉醒特殊效果：" + lvl_data.effect
+	log_message("[color=cyan]◆ 功法突破！" + defs.name + " " + _num_to_chinese(new_level) + "重" + effect_text + "[/color]")
+	recalc_technique_multiplier()
+	recalc_mana_per_sec()
+	update_max_hp()
+	comprehending_tech_id = ""
+	comprehension_progress = 0.0
+	comprehension_time_total = 0.0
+	if $PanelSkills.visible:
+		_refresh_skills()
+	if $PanelProfile.visible:
+		_refresh_profile()
+
+func start_comprehension(tech_id: String):
+	if not TECHNIQUE_DEFS.has(tech_id):
+		return
+	if comprehending_tech_id != "":
+		log_message("[color=red]正在参悟" + TECHNIQUE_DEFS[comprehending_tech_id].name + "，无法同时参悟多门功法[/color]")
+		return
+	var tech = learned_techniques.get(tech_id, {})
+	if not tech.has("level"):
+		learned_techniques[tech_id] = {"level": 0}
+		tech = learned_techniques[tech_id]
+	var current_level = tech.get("level", 0)
+	var defs = TECHNIQUE_DEFS[tech_id]
+	if current_level >= defs.levels.size():
+		log_message("[color=red]" + defs.name + "已修炼至最高重数[/color]")
+		return
+	var next_lvl = defs.levels[current_level]
+	comprehending_tech_id = tech_id
+	comprehension_time_total = next_lvl.time
+	comprehension_progress = 0.0
+	log_message("[color=cyan]开始参悟" + defs.name + " " + _num_to_chinese(current_level + 1) + "重（预计" + str(int(comprehension_time_total)) + "秒）...[/color]")
+	if $PanelSkills.visible:
+		_refresh_skills()
+
+func _process_meditation(delta: float):
+	if not $MeditationUI.visible:
+		return
+	meditation_timer += delta
+	var bar = $MeditationUI/MeditationBar
+	bar.max_value = meditation_cycle_time
+	bar.value = min(meditation_timer, meditation_cycle_time)
+	if meditation_timer >= meditation_cycle_time:
+		meditation_timer -= meditation_cycle_time
+		meditation_cycles += 1
+		spiritual_energy += pending_energy
+		pending_energy = 0.0
+
+func get_technique_mana_pct() -> float:
+	var total = 0.0
+	for tid in learned_techniques:
+		if not TECHNIQUE_DEFS.has(tid):
+			continue
+		var defs = TECHNIQUE_DEFS[tid]
+		var tech = learned_techniques[tid]
+		var level = tech.get("level", 0)
+		for i in range(level):
+			if i < defs.levels.size():
+				total += defs.levels[i].mana_pct
+		if defs.name == "天罡功" and level >= 12:
+			total += 1.0
+	return total
+
+func get_technique_atk_bonus() -> float:
+	var total = 0.0
+	for tid in learned_techniques:
+		if not TECHNIQUE_DEFS.has(tid):
+			continue
+		var defs = TECHNIQUE_DEFS[tid]
+		var tech = learned_techniques[tid]
+		var level = tech.get("level", 0)
+		for i in range(level):
+			if i < defs.levels.size():
+				total += defs.levels[i].atk
+	return total
+
+func get_technique_def_bonus() -> float:
+	var total = 0.0
+	for tid in learned_techniques:
+		if not TECHNIQUE_DEFS.has(tid):
+			continue
+		var defs = TECHNIQUE_DEFS[tid]
+		var tech = learned_techniques[tid]
+		var level = tech.get("level", 0)
+		for i in range(level):
+			if i < defs.levels.size():
+				total += defs.levels[i].def
+	return total
+
+func get_technique_hp_bonus() -> float:
+	var total = 0.0
+	for tid in learned_techniques:
+		if not TECHNIQUE_DEFS.has(tid):
+			continue
+		var defs = TECHNIQUE_DEFS[tid]
+		var tech = learned_techniques[tid]
+		var level = tech.get("level", 0)
+		for i in range(level):
+			if i < defs.levels.size():
+				total += defs.levels[i].hp
+	return total
+
+func get_technique_comprehension_mult() -> float:
+	if _has_tiangang_max_level():
+		return 2.0
+	return 1.0
+
+func _has_tiangang_max_level() -> bool:
+	var tech = learned_techniques.get("celestial_art", {})
+	var level = tech.get("level", 0)
+	var defs = TECHNIQUE_DEFS.get("celestial_art", {})
+	if defs.is_empty():
+		return false
+	return level >= defs.levels.size()
 
 func _format_num(n: float) -> String:
 	var s = str(int(n))
@@ -259,10 +522,16 @@ func _format_num(n: float) -> String:
 		result += s[i]
 	return result
 
+func _num_to_chinese(n: int) -> String:
+	var digits = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"]
+	if n >= 0 and n < digits.size():
+		return digits[n]
+	return str(n)
+
 func is_skill_learned(skill_name: String) -> bool:
-	for s in learned_skills:
-		if s['name'] == skill_name:
-			return true
+	var tid = TECHNIQUE_ID_MAP.get(skill_name, "")
+	if tid != "" and learned_techniques.has(tid):
+		return learned_techniques[tid].get("level", 0) > 0
 	return false
 
 func is_recipe_learned(recipe_name: String) -> bool:
@@ -305,6 +574,7 @@ func _ready():
 	$PanelProfile.back_requested.connect(_on_back)
 	$PanelProfile.reincarnation_requested.connect(_on_reincarnate_clicked)
 	$PanelSkills.back_requested.connect(_on_back)
+	$PanelSkills.comprehend_requested.connect(start_comprehension)
 	$PanelInventory.back_requested.connect(_on_back)
 	$PanelInventory.use_skill_requested.connect(_on_use_skill)
 	$PanelInventory.sell_skill_requested.connect(_on_sell_skill)
@@ -350,7 +620,7 @@ func _notification(what):
 
 func save_game():
 	var data = {
-		'save_version': 2,
+		'save_version': 3,
 		'spiritual_energy': spiritual_energy,
 		'mana_per_sec': mana_per_sec,
 		'base_mana': base_mana,
@@ -363,7 +633,10 @@ func save_game():
 		'realm': realm,
 		'realm_level': realm_level,
 		'inventory': inventory,
-		'learned_skills': learned_skills,
+		'learned_techniques': learned_techniques,
+		'comprehending_tech_id': comprehending_tech_id,
+		'comprehension_progress': comprehension_progress,
+		'comprehension_time_total': comprehension_time_total,
 		'learned_recipes': learned_recipes,
 		'pill_inventory': pill_inventory,
 		'player_name': player_name,
@@ -393,10 +666,6 @@ func load_save():
 	var data = json.data
 	if typeof(data) != TYPE_DICTIONARY:
 		return
-	var version = data.get('save_version', 1)
-	if version < 2:
-		migrate_old_save(data)
-		return
 	spiritual_energy = data.get('spiritual_energy', 0.0)
 	mana_per_sec = data.get('mana_per_sec', 10.0)
 	base_mana = data.get('base_mana', 10.0)
@@ -415,7 +684,10 @@ func load_save():
 	realm_level = data.get('realm_level', 1)
 	inventory = data.get('inventory', [])
 	equipment_inventory = data.get('equipment_inventory', [])
-	learned_skills = data.get('learned_skills', [])
+	learned_techniques = data.get('learned_techniques', {})
+	comprehending_tech_id = data.get('comprehending_tech_id', "")
+	comprehension_progress = data.get('comprehension_progress', 0.0)
+	comprehension_time_total = data.get('comprehension_time_total', 0.0)
 	learned_recipes = data.get('learned_recipes', [])
 	pill_inventory = data.get('pill_inventory', {})
 	player_name = data.get('player_name', "")
@@ -425,31 +697,6 @@ func load_save():
 	if loaded_eq.size() > 0:
 		equipped_items = loaded_eq
 	player_hp = data.get('player_hp', 100.0)
-
-func migrate_old_save(data: Dictionary):
-	spiritual_energy = data.get('spiritual_energy', 0.0)
-	realm = data.get('realm', '练气一层')
-	realm_level = data.get('realm_level', 1)
-	inventory = data.get('inventory', [])
-	learned_skills = data.get('learned_skills', [])
-	learned_recipes = data.get('learned_recipes', [])
-	pill_inventory = data.get('pill_inventory', {})
-	player_name = data.get('player_name', "")
-	spirit_root = data.get('spirit_root', {})
-	age = data.get('age', 16)
-	var loaded_eq = data.get('equipped_items', {})
-	if loaded_eq.size() > 0:
-		equipped_items = loaded_eq
-	player_hp = data.get('player_hp', 100.0)
-	recalc_realm_multiplier()
-	recalc_technique_multiplier()
-	recalc_artifact_multiplier()
-	var old_mana = data.get('mana_per_sec', 10.0)
-	recalc_mana_per_sec()
-	var reconstructed = mana_per_sec
-	pill_flat_bonus = max(0.0, old_mana - reconstructed)
-	recalc_mana_per_sec()
-	log_message("[color=yellow]存档已迁移至新版修炼系统[/color]")
 
 func calc_offline_earnings():
 	if not FileAccess.file_exists(SAVE_PATH):
@@ -474,13 +721,15 @@ func calc_offline_earnings():
 # ==================== 主循环 ====================
 
 func _process(delta: float):
-	spiritual_energy += mana_per_sec * delta
+	pending_energy += mana_per_sec * delta
 	try_breakthrough()
 	update_ui()
 	age_timer += delta
 	if age_timer >= 300.0:
 		age_timer = 0.0
 		age += 1
+	_process_comprehension(delta)
+	_process_meditation(delta)
 	save_timer += delta
 	if save_timer >= 60.0:
 		save_timer = 0.0
@@ -526,13 +775,9 @@ func recalc_realm_multiplier():
 	realm_multiplier = 1.0 + sum
 
 func recalc_technique_multiplier():
-	var skill_sum = 0.0
-	for skill in learned_skills:
-		var pct = skill.get('mana_bonus_pct', 0.0)
-		if pct == 0.0 and skill.has('mana_bonus'):
-			pct = skill['mana_bonus'] / base_mana
-		skill_sum += pct
-	technique_multiplier = spirit_root.get('bonus', 1.0) * (1.0 + skill_sum)
+	var skill_sum = get_technique_mana_pct()
+	var comp_mult = get_technique_comprehension_mult()
+	technique_multiplier = spirit_root.get('bonus', 1.0) * (1.0 + skill_sum) * comp_mult
 
 func recalc_artifact_multiplier():
 	var art = equipped_items.get('artifact')
@@ -583,6 +828,7 @@ func show_panel(panel_name: String):
 	$MessageLog.visible = is_main
 	$MenuBar.visible = is_main
 	$TextureRect.visible = is_main
+	$MeditationUI.visible = is_main
 	$PanelProfile.visible = (panel_name == "profile")
 	$PanelSkills.visible = (panel_name == "skills")
 	$PanelInventory.visible = (panel_name == "inventory")
@@ -614,7 +860,7 @@ func _refresh_profile():
 		'mana_per_sec': mana_per_sec,
 		'age': age,
 		'spirit_root': spirit_root,
-		'learned_skills': learned_skills,
+		'learned_techniques': learned_techniques,
 		'pill_inventory': pill_inventory,
 		'reincarnation_count': reincarnation_count,
 		'enlightenment_points': enlightenment_points,
@@ -638,8 +884,10 @@ func _refresh_profile():
 
 func _refresh_skills():
 	$PanelSkills.set_state({
-		'learned_skills': learned_skills,
-		'shop_skills': shop_skills,
+		'learned_techniques': learned_techniques,
+		'comprehending_tech_id': comprehending_tech_id,
+		'comprehension_progress': comprehension_progress,
+		'comprehension_time_total': comprehension_time_total,
 	})
 	$PanelSkills.refresh()
 
@@ -663,7 +911,7 @@ func _refresh_shop():
 		'shop_skills': shop_skills,
 		'shop_recipes': shop_recipes,
 		'shop_equipment': shop_equipment,
-		'learned_skills': learned_skills,
+		'learned_techniques': learned_techniques,
 		'learned_recipes': learned_recipes,
 		'equipped_items': equipped_items,
 		'equipment_inventory': equipment_inventory,
@@ -743,22 +991,24 @@ func _on_btn_talents():
 # ==================== 商店 ====================
 
 func _on_buy_skill(skill: Dictionary):
-	if is_skill_learned(skill['name']):
-		log_message("[color=red]已学会" + skill['name'] + "，无需重复购买[/color]")
+	var skill_name = skill['name']
+	var tid = TECHNIQUE_ID_MAP.get(skill_name, "")
+	if tid == "":
+		log_message("[color=red]未知功法：" + skill_name + "[/color]")
+		return
+	if is_skill_learned(skill_name):
+		log_message("[color=red]已学会" + skill_name + "，无需重复购买[/color]")
 		return
 	if realm_level < skill.get('min_realm', 1):
 		var req_realm = realms[skill['min_realm'] - 1]['name']
-		log_message("[color=red]境界不足！需要达到" + req_realm + "才能修炼" + skill['name'] + "[/color]")
+		log_message("[color=red]境界不足！需要达到" + req_realm + "才能修炼" + skill_name + "[/color]")
 		return
 	if spiritual_energy < skill['price']:
-		log_message("[color=red]灵气不足，无法购买" + skill['name'] + "[/color]")
+		log_message("[color=red]灵气不足，无法购买" + skill_name + "[/color]")
 		return
 	spiritual_energy -= skill['price']
-	inventory.append(skill['name'])
-	print("=== _on_buy_skill ===")
-	print("购买了: ", skill['name'])
-	print("inventory = ", inventory)
-	log_message("[color=green]购买成功：" + skill['name'] + "[/color]")
+	inventory.append(tid)
+	log_message("[color=green]购买成功：" + skill_name + "[/color]")
 	if $PanelShop.visible: _refresh_shop()
 	if $PanelInventory.visible: _refresh_inventory()
 
@@ -789,46 +1039,39 @@ func _on_buy_equipment(item: Dictionary):
 func _on_use_skill(index: int):
 	if index >= inventory.size():
 		return
-	var skill_name = inventory[index]
-	if is_skill_learned(skill_name):
-		log_message("[color=red]已学会" + skill_name + "，无法重复学习[/color]")
+	var tid = inventory[index]
+	if not TECHNIQUE_DEFS.has(tid):
+		log_message("[color=red]未知功法ID：" + tid + "[/color]")
 		return
-	var skill_data = null
-	for s in shop_skills:
-		if s['name'] == skill_name:
-			skill_data = s
-			break
-	if skill_data == null:
-		log_message("[color=red]未知功法：" + skill_name + "[/color]")
+	var defs = TECHNIQUE_DEFS[tid]
+	if is_skill_learned(defs.name):
+		log_message("[color=red]已学会" + defs.name + "，无法重复学习[/color]")
 		return
-	if realm_level < skill_data.get('min_realm', 1):
-		var req_realm = realms[skill_data['min_realm'] - 1]['name']
-		log_message("[color=red]境界不足！需要达到" + req_realm + "才能修炼" + skill_name + "[/color]")
+	if realm_level < defs.get('min_realm', 1):
+		var req_realm = realms[defs['min_realm'] - 1]['name']
+		log_message("[color=red]境界不足！需要达到" + req_realm + "才能修炼" + defs.name + "[/color]")
 		return
 	inventory.remove_at(index)
-	learned_skills.append({'name': skill_name, 'mana_bonus': skill_data['mana_bonus'], 'desc': skill_data['desc'], 'mana_bonus_pct': skill_data['mana_bonus_pct']})
+	learned_techniques[tid] = {"level": 0}
+	log_message("[color=cyan]获得功法：" + defs.name + "（" + TECHNIQUE_GRADES[defs.grade - 1] + "功法，共" + str(defs.levels.size()) + "重）[/color]")
+	start_comprehension(tid)
 	recalc_technique_multiplier()
 	recalc_mana_per_sec()
-	log_message("[color=cyan]使用功法：" + skill_name + "，修炼速度x" + str(1.0 + skill_data['mana_bonus_pct']) + "[/color]")
 	if $PanelInventory.visible: _refresh_inventory()
 	if $PanelSkills.visible: _refresh_skills()
 
 func _on_sell_skill(index: int):
 	if index >= inventory.size():
 		return
-	var skill_name = inventory[index]
-	var skill_data = null
-	for s in shop_skills:
-		if s['name'] == skill_name:
-			skill_data = s
-			break
-	if skill_data == null:
-		log_message("[color=red]未知功法：" + skill_name + "[/color]")
+	var tid = inventory[index]
+	if not TECHNIQUE_DEFS.has(tid):
+		log_message("[color=red]未知功法ID：" + tid + "[/color]")
 		return
-	var sell_price = int(skill_data['price'] * SELL_RATIO)
+	var defs = TECHNIQUE_DEFS[tid]
+	var sell_price = int(defs['price'] * SELL_RATIO)
 	spiritual_energy += sell_price
 	inventory.remove_at(index)
-	log_message("[color=yellow]出售了【" + skill_name + "】，获得" + _format_num(sell_price) + "灵气[/color]")
+	log_message("[color=yellow]出售了【" + defs.name + "】，获得" + _format_num(sell_price) + "灵气[/color]")
 	if $PanelInventory.visible: _refresh_inventory()
 
 func _on_sell_pill(pill_name: String):
@@ -1105,7 +1348,10 @@ func _on_reincarnate_confirmed():
 	spiritual_energy = 0.0
 	base_mana = 10.0
 	inventory = []
-	learned_skills = []
+	learned_techniques = {}
+	comprehending_tech_id = ""
+	comprehension_progress = 0.0
+	comprehension_time_total = 0.0
 	learned_recipes = []
 	pill_inventory = {}
 	equipped_items = {

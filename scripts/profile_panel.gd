@@ -9,7 +9,7 @@ var _spiritual_energy: float = 0.0
 var _mana_per_sec: float = 0.0
 var _age: int = 16
 var _spirit_root: Dictionary = {}
-var _learned_skills: Array = []
+var _learned_techniques: Dictionary = {}
 var _pill_inventory: Dictionary = {}
 var _reincarnation_count: int = 0
 var _enlightenment_points: int = 0
@@ -37,7 +37,7 @@ func set_state(data: Dictionary):
 	_mana_per_sec = data.get('mana_per_sec', 0.0)
 	_age = data.get('age', 16)
 	_spirit_root = data.get('spirit_root', {})
-	_learned_skills = data.get('learned_skills', [])
+	_learned_techniques = data.get('learned_techniques', {})
 	_pill_inventory = data.get('pill_inventory', {})
 	_reincarnation_count = data.get('reincarnation_count', 0)
 	_enlightenment_points = data.get('enlightenment_points', 0)
@@ -268,7 +268,7 @@ func refresh():
 	tv.add_child(_pl("年龄：" + str(_age) + "岁", Color(0.7, 0.7, 0.9)))
 
 	var stat_row = HBoxContainer.new()
-	stat_row.add_child(_pl("功法：" + str(_learned_skills.size()) + "门", Color(0.4, 0.9, 0.4)))
+	stat_row.add_child(_pl("功法：" + str(_learned_techniques.size()) + "门", Color(0.4, 0.9, 0.4)))
 	stat_row.add_child(_pl("  |  ", Color(0.3, 0.3, 0.4)))
 	var pill_count = 0
 	for p in _pill_inventory:

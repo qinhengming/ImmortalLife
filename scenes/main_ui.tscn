@@ -1,14 +1,15 @@
 [gd_scene format=3 uid="uid://ccc5wvdt853pe"]
 
 [ext_resource type="Script" uid="uid://b5tn5j50gnluy" path="res://scripts/main_ui.gd" id="1_nk58v"]
-[ext_resource type="PackedScene" uid="uid://cave_panel" path="res://scenes/cave_panel.tscn" id="2_6ydai"]
-[ext_resource type="PackedScene" uid="uid://profile_panel" path="res://scenes/profile_panel.tscn" id="3_aonxb"]
-[ext_resource type="PackedScene" uid="uid://skills_panel" path="res://scenes/skills_panel.tscn" id="4_7byyt"]
-[ext_resource type="PackedScene" uid="uid://inventory_panel" path="res://scenes/inventory_panel.tscn" id="5_k4bwc"]
-[ext_resource type="PackedScene" uid="uid://shop_panel" path="res://scenes/shop_panel.tscn" id="6_0dsmd"]
-[ext_resource type="PackedScene" uid="uid://equipment_panel" path="res://scenes/equipment_panel.tscn" id="7_l6qih"]
-[ext_resource type="PackedScene" uid="uid://map_panel" path="res://scenes/map_panel.tscn" id="8_24xml"]
-[ext_resource type="PackedScene" uid="uid://talents_panel" path="res://scenes/talents_panel.tscn" id="9_jf41d"]
+[ext_resource type="PackedScene" path="res://scenes/cave_panel.tscn" id="2_6ydai"]
+[ext_resource type="PackedScene" path="res://scenes/profile_panel.tscn" id="3_aonxb"]
+[ext_resource type="PackedScene" path="res://scenes/skills_panel.tscn" id="4_7byyt"]
+[ext_resource type="PackedScene" path="res://scenes/inventory_panel.tscn" id="5_k4bwc"]
+[ext_resource type="PackedScene" path="res://scenes/shop_panel.tscn" id="6_0dsmd"]
+[ext_resource type="PackedScene" path="res://scenes/equipment_panel.tscn" id="7_l6qih"]
+[ext_resource type="PackedScene" path="res://scenes/map_panel.tscn" id="8_24xml"]
+[ext_resource type="PackedScene" path="res://scenes/talents_panel.tscn" id="9_jf41d"]
+[ext_resource type="Texture2D" uid="uid://c5gwijdu00tbi" path="res://打坐.png" id="10_meditation"]
 
 [node name="MainUI" type="Control" unique_id=1721037006]
 layout_mode = 3
@@ -27,6 +28,7 @@ offset_left = 12.0
 offset_top = 4.0
 offset_right = -12.0
 offset_bottom = 22.0
+grow_horizontal = 2
 theme_override_font_sizes/font_size = 15
 
 [node name="Label2" type="Label" parent="." unique_id=1199942353]
@@ -37,6 +39,7 @@ offset_left = 12.0
 offset_top = 24.0
 offset_right = -12.0
 offset_bottom = 42.0
+grow_horizontal = 2
 theme_override_font_sizes/font_size = 15
 
 [node name="Label3" type="Label" parent="." unique_id=1754529386]
@@ -47,6 +50,7 @@ offset_left = 12.0
 offset_top = 44.0
 offset_right = -12.0
 offset_bottom = 62.0
+grow_horizontal = 2
 theme_override_font_sizes/font_size = 15
 
 [node name="Label4" type="Label" parent="." unique_id=1021501909]
@@ -57,6 +61,7 @@ offset_left = 12.0
 offset_top = 64.0
 offset_right = -12.0
 offset_bottom = 82.0
+grow_horizontal = 2
 theme_override_font_sizes/font_size = 15
 
 [node name="Label5" type="Label" parent="." unique_id=447641647]
@@ -67,6 +72,7 @@ offset_left = 12.0
 offset_top = 84.0
 offset_right = -12.0
 offset_bottom = 102.0
+grow_horizontal = 2
 theme_override_font_sizes/font_size = 15
 
 [node name="MessageLog" type="RichTextLabel" parent="." unique_id=1737071118]
@@ -75,12 +81,15 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 6.0
-offset_top = 108.0
+offset_top = 400.0
 offset_right = -6.0
-offset_bottom = -108.0
+offset_bottom = -116.0
+grow_horizontal = 2
+grow_vertical = 2
 bbcode_enabled = true
 text = "[center]-- 系统日志 --[/center]"
 scroll_following = true
+theme_override_font_sizes/normal_font_size = 11
 
 [node name="MenuBar" type="GridContainer" parent="." unique_id=566777009]
 layout_mode = 1
@@ -92,6 +101,8 @@ offset_left = 4.0
 offset_top = -104.0
 offset_right = -4.0
 offset_bottom = -4.0
+grow_horizontal = 2
+grow_vertical = 0
 columns = 4
 
 [node name="BtnProfile" type="Button" parent="MenuBar" unique_id=836411321]
@@ -150,29 +161,42 @@ size_flags_vertical = 3
 theme_override_font_sizes/font_size = 14
 text = "地图"
 
-[node name="PanelProfile" parent="." instance=ExtResource("3_aonxb")]
-visible = false
+[node name="PanelProfile" parent="." unique_id=559233909 instance=ExtResource("3_aonxb")]
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="PanelSkills" parent="." instance=ExtResource("4_7byyt")]
-visible = false
+[node name="PanelSkills" parent="." unique_id=919689317 instance=ExtResource("4_7byyt")]
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="PanelInventory" parent="." instance=ExtResource("5_k4bwc")]
-visible = false
+[node name="PanelInventory" parent="." unique_id=965110247 instance=ExtResource("5_k4bwc")]
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="PanelShop" parent="." instance=ExtResource("6_0dsmd")]
-visible = false
+[node name="PanelShop" parent="." unique_id=606930718 instance=ExtResource("6_0dsmd")]
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="PanelCave" parent="." instance=ExtResource("2_6ydai")]
-visible = false
+[node name="PanelCave" parent="." unique_id=786786638 instance=ExtResource("2_6ydai")]
+anchors_preset = 15
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="PanelEquipment" parent="." instance=ExtResource("7_l6qih")]
-visible = false
+[node name="PanelEquipment" parent="." unique_id=1755196821 instance=ExtResource("7_l6qih")]
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="PanelMap" parent="." instance=ExtResource("8_24xml")]
-visible = false
+[node name="PanelMap" parent="." unique_id=872549497 instance=ExtResource("8_24xml")]
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="PanelTalents" parent="." instance=ExtResource("9_jf41d")]
-visible = false
+[node name="PanelTalents" parent="." unique_id=1527027532 instance=ExtResource("9_jf41d")]
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="TextureRect" type="TextureRect" parent="." unique_id=570458067]
 layout_mode = 1
@@ -183,9 +207,36 @@ offset_left = -40.0
 offset_top = 4.0
 offset_right = -12.0
 offset_bottom = 32.0
+grow_horizontal = 0
+
+[node name="MeditationUI" type="VBoxContainer" parent="." unique_id=234787237]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -150.0
+offset_top = 120.0
+offset_right = 150.0
+offset_bottom = 340.0
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="MeditationImg" type="TextureRect" parent="MeditationUI" unique_id=1836174648]
+custom_minimum_size = Vector2(180, 180)
+layout_mode = 2
+texture = ExtResource("10_meditation")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="MeditationBar" type="ProgressBar" parent="MeditationUI" unique_id=635178629]
+custom_minimum_size = Vector2(240, 16)
+layout_mode = 2
+show_percentage = false
 
 [node name="ReincarnateConfirm" type="ConfirmationDialog" parent="." unique_id=1089348412]
+oversampling_override = 1.0
 title = "兵解重修"
+size = Vector2i(272, 184)
 dialog_text = "确定要兵解重修吗？
 将失去所有修为、功法、丹药、装备，
 保留灵根和天赋。

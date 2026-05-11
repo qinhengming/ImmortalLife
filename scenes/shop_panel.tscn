@@ -37,11 +37,50 @@ theme_override_font_sizes/font_size = 16
 [node name="Separator" type="HSeparator" parent="VBox"]
 layout_mode = 2
 
-[node name="ScrollList" type="ScrollContainer" parent="VBox"]
+[node name="HBox" type="HBoxContainer" parent="VBox"]
 layout_mode = 2
 size_flags_vertical = 3
-size_flags_stretch_ratio = 3.0
+theme_override_constants/separation = 0
 
-[node name="ItemList" type="VBoxContainer" parent="VBox/ScrollList"]
+[node name="LeftMenu" type="VBoxContainer" parent="VBox/HBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(64, 0)
+theme_override_constants/separation = 2
+
+[node name="BtnAll" type="Button" parent="VBox/HBox/LeftMenu"]
+layout_mode = 2
+toggle_mode = true
+text = "全部"
+theme_override_font_sizes/font_size = 13
+button_pressed = true
+
+[node name="BtnSkills" type="Button" parent="VBox/HBox/LeftMenu"]
+layout_mode = 2
+toggle_mode = true
+text = "功法"
+theme_override_font_sizes/font_size = 13
+
+[node name="BtnPills" type="Button" parent="VBox/HBox/LeftMenu"]
+layout_mode = 2
+toggle_mode = true
+text = "丹方"
+theme_override_font_sizes/font_size = 13
+
+[node name="BtnEquip" type="Button" parent="VBox/HBox/LeftMenu"]
+layout_mode = 2
+toggle_mode = true
+text = "装备"
+theme_override_font_sizes/font_size = 13
+
+[node name="VSeparator" type="VSeparator" parent="VBox/HBox"]
+layout_mode = 2
+
+[node name="ScrollList" type="ScrollContainer" parent="VBox/HBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ItemList" type="VBoxContainer" parent="VBox/HBox/ScrollList"]
 layout_mode = 2
 size_flags_horizontal = 3

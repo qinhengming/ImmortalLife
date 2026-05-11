@@ -10,13 +10,33 @@ var _realm_level: int = 1
 var _shop_skills: Array = []
 var _shop_recipes: Array = []
 var _shop_equipment: Array = []
-var _learned_skills: Array = []
+var _learned_techniques: Dictionary = {}
 var _learned_recipes: Array = []
+
+const TECHNIQUE_ID_MAP = {
+	"吐纳术": "breathing_art",
+	"聚灵诀": "spirit_gathering",
+	"御风诀": "wind_control",
+	"焚天决": "burning_heaven",
+	"冰心诀": "ice_heart",
+	"天罡功": "celestial_art",
+}
+
+const TECHNIQUE_GRADES = ["黄级", "玄级", "地级", "天级", "圣级"]
+const TECHNIQUE_GRADE_COLORS = [
+	Color(0.9, 0.85, 0.4),
+	Color(0.35, 0.75, 0.9),
+	Color(0.9, 0.55, 0.3),
+	Color(0.65, 0.35, 0.95),
+	Color(1.0, 0.25, 0.2),
+]
+const TECHNIQUE_GRADE_MAX_LEVELS = [3, 5, 7, 9, 12]
 var _equipped_items: Dictionary = {}
 var _equipment_inventory: Array = []
 var _realms: Array = []
 var _equipment_slots: Array = []
 var _equipment_slot_names: Dictionary = {}
+var _current_cat: String = "all"
 
 
 func set_state(data: Dictionary):
@@ -25,7 +45,7 @@ func set_state(data: Dictionary):
 	_shop_skills = data.get('shop_skills', [])
 	_shop_recipes = data.get('shop_recipes', [])
 	_shop_equipment = data.get('shop_equipment', [])
-	_learned_skills = data.get('learned_skills', [])
+	_learned_techniques = data.get('learned_techniques', {})
 	_learned_recipes = data.get('learned_recipes', [])
 	_equipped_items = data.get('equipped_items', {})
 	_equipment_inventory = data.get('equipment_inventory', [])
@@ -36,6 +56,10 @@ func set_state(data: Dictionary):
 
 func _ready():
 	$VBox/TopBar/BtnBack.pressed.connect(func(): back_requested.emit())
+	$VBox/HBox/LeftMenu/BtnAll.pressed.connect(func(): _set_category("all"))
+	$VBox/HBox/LeftMenu/BtnSkills.pressed.connect(func(): _set_category("skills"))
+	$VBox/HBox/LeftMenu/BtnPills.pressed.connect(func(): _set_category("pills"))
+	$VBox/HBox/LeftMenu/BtnEquip.pressed.connect(func(): _set_category("equip"))
 
 
 func _format_num(n: float) -> String:
@@ -76,9 +100,9 @@ func _pl(text: String, color: Color = Color(0.9, 0.9, 1.0), font_size: int = 13)
 
 
 func is_skill_learned(name: String) -> bool:
-	for s in _learned_skills:
-		if s['name'] == name:
-			return true
+	var tid = TECHNIQUE_ID_MAP.get(name, "")
+	if tid != "" and _learned_techniques.has(tid):
+		return _learned_techniques[tid].get("level", 0) > 0
 	return false
 
 
@@ -100,8 +124,24 @@ func _is_equipment_owned(name: String) -> bool:
 	return false
 
 
+func _set_category(cat: String):
+	_current_cat = cat
+	var menu = $VBox/HBox/LeftMenu
+	for btn in menu.get_children():
+		btn.button_pressed = false
+	match cat:
+		"all":
+			menu.get_node("BtnAll").button_pressed = true
+		"skills":
+			menu.get_node("BtnSkills").button_pressed = true
+		"pills":
+			menu.get_node("BtnPills").button_pressed = true
+		"equip":
+			menu.get_node("BtnEquip").button_pressed = true
+	refresh()
+
 func refresh():
-	var list = $VBox/ScrollList/ItemList
+	var list = $VBox/HBox/ScrollList/ItemList
 	for child in list.get_children():
 		list.remove_child(child)
 		child.queue_free()
@@ -116,34 +156,37 @@ func refresh():
 	list.add_child(HSeparator.new())
 
 	# 功法区
-	var st = _pl("── 功法秘笈 ──", Color(0.3, 0.8, 1.0), 13)
-	st.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	st.add_theme_constant_override("margin_top", 6)
-	st.add_theme_constant_override("margin_bottom", 4)
-	list.add_child(st)
+	if _current_cat == "all" or _current_cat == "skills":
+		var st = _pl("── 功法秘笈 ──", Color(0.3, 0.8, 1.0), 13)
+		st.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		st.add_theme_constant_override("margin_top", 6)
+		st.add_theme_constant_override("margin_bottom", 4)
+		list.add_child(st)
 
-	for skill in _shop_skills:
-		list.add_child(_make_item_card(skill, "skill"))
+		for skill in _shop_skills:
+			list.add_child(_make_item_card(skill, "skill"))
 
 	# 丹方区
-	var rt = _pl("── 丹方大全 ──", Color(0.3, 0.8, 1.0), 13)
-	rt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	rt.add_theme_constant_override("margin_top", 8)
-	rt.add_theme_constant_override("margin_bottom", 4)
-	list.add_child(rt)
+	if _current_cat == "all" or _current_cat == "pills":
+		var rt = _pl("── 丹方大全 ──", Color(0.3, 0.8, 1.0), 13)
+		rt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		rt.add_theme_constant_override("margin_top", 8)
+		rt.add_theme_constant_override("margin_bottom", 4)
+		list.add_child(rt)
 
-	for recipe in _shop_recipes:
-		list.add_child(_make_item_card(recipe, "recipe"))
+		for recipe in _shop_recipes:
+			list.add_child(_make_item_card(recipe, "recipe"))
 
 	# 装备区
-	var et = _pl("── 装备 ──", Color(0.3, 0.8, 1.0), 13)
-	et.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	et.add_theme_constant_override("margin_top", 8)
-	et.add_theme_constant_override("margin_bottom", 4)
-	list.add_child(et)
+	if _current_cat == "all" or _current_cat == "equip":
+		var et = _pl("── 装备 ──", Color(0.3, 0.8, 1.0), 13)
+		et.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		et.add_theme_constant_override("margin_top", 8)
+		et.add_theme_constant_override("margin_bottom", 4)
+		list.add_child(et)
 
-	for equip in _shop_equipment:
-		list.add_child(_make_equip_card(equip))
+		for equip in _shop_equipment:
+			list.add_child(_make_equip_card(equip))
 
 
 func _make_item_card(data: Dictionary, type: String) -> PanelContainer:
@@ -177,9 +220,24 @@ func _make_item_card(data: Dictionary, type: String) -> PanelContainer:
 
 	var desc_label = Label.new()
 	if type == "skill":
-		desc_label.text = data['desc'] + " | 修炼速度x" + str(1.0 + data['mana_bonus_pct'])
+		var tid = TECHNIQUE_ID_MAP.get(data.name, "")
+		var grade_name = ""
+		var max_lv = 0
+		if tid != "":
+			var grade_idx = 0
+			match tid:
+				"breathing_art": grade_idx = 0
+				"spirit_gathering": grade_idx = 1
+				"wind_control": grade_idx = 2
+				"burning_heaven": grade_idx = 3
+				"ice_heart": grade_idx = 3
+				"celestial_art": grade_idx = 4
+			grade_name = TECHNIQUE_GRADES[grade_idx]
+			max_lv = TECHNIQUE_GRADE_MAX_LEVELS[grade_idx]
+		desc_label.text = data['desc'] + " | " + grade_name + "·" + str(max_lv) + "重 | 修炼速度x" + str(1.0 + data['mana_bonus_pct'])
 	else:
 		desc_label.text = data['desc'] + " | 炼制消耗：" + _format_num(data['craft_cost'])
+	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.7))
 	desc_label.add_theme_font_size_override("font_size", 11)
 	info_vbox.add_child(desc_label)
@@ -218,6 +276,9 @@ func _make_item_card(data: Dictionary, type: String) -> PanelContainer:
 
 	# 按钮
 	var btn = Button.new()
+	btn.custom_minimum_size = Vector2(52, 28)
+	btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	btn.add_theme_font_size_override("font_size", 11)
 	if owned:
 		btn.text = "已习得"
 		btn.disabled = true
@@ -276,6 +337,7 @@ func _make_equip_card(data: Dictionary) -> PanelContainer:
 
 	var dl = Label.new()
 	dl.text = data['desc'] + " | " + " ".join(stat_parts)
+	dl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dl.add_theme_color_override("font_color", Color(0.55, 0.55, 0.7))
 	dl.add_theme_font_size_override("font_size", 11)
 	vbox.add_child(dl)
@@ -299,6 +361,9 @@ func _make_equip_card(data: Dictionary) -> PanelContainer:
 
 	# 按钮
 	var btn = Button.new()
+	btn.custom_minimum_size = Vector2(52, 28)
+	btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	btn.add_theme_font_size_override("font_size", 11)
 	if owned:
 		btn.text = "已拥有"
 		btn.disabled = true
