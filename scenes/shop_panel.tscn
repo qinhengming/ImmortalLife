@@ -72,6 +72,12 @@ toggle_mode = true
 text = "装备"
 theme_override_font_sizes/font_size = 13
 
+[node name="BtnArrays" type="Button" parent="VBox/HBox/LeftMenu"]
+layout_mode = 2
+toggle_mode = true
+text = "阵法"
+theme_override_font_sizes/font_size = 13
+
 [node name="VSeparator" type="VSeparator" parent="VBox/HBox"]
 layout_mode = 2
 

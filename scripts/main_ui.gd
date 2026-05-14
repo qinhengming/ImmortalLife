@@ -45,11 +45,21 @@ var player_max_hp: float = 100.0
 
 # 战斗状态
 var in_battle: bool = false
-var current_enemy: Dictionary = {}
+var enemy_team: Array = []
+var ally_team: Array = []
 var battle_timer: float = 0.0
 var battle_speed: float = 1.0
 var current_map: Dictionary = {}
 var battle_log: String = ""
+var companions_unlocked: Array = []
+
+const COMPANION_DEFS = [
+	{'id': 'sword_servant', 'name': '剑侍', 'unlock_realm': 2, 'base_hp': 50, 'base_atk': 8, 'base_def': 4, 'color': Color(0.3, 0.8, 0.5)},
+	{'id': 'formation_spirit', 'name': '阵灵', 'unlock_realm': 10, 'base_hp': 80, 'base_atk': 12, 'base_def': 8, 'color': Color(0.5, 0.5, 1.0)},
+	{'id': 'pill_child', 'name': '丹童', 'unlock_realm': 18, 'base_hp': 60, 'base_atk': 10, 'base_def': 6, 'color': Color(0.3, 1.0, 0.7)},
+	{'id': 'dharma_protector', 'name': '护法', 'unlock_realm': 37, 'base_hp': 150, 'base_atk': 20, 'base_def': 15, 'color': Color(1.0, 0.5, 0.3)},
+	{'id': 'dao_partner', 'name': '道侣', 'unlock_realm': 28, 'base_hp': 200, 'base_atk': 30, 'base_def': 20, 'color': Color(1.0, 0.3, 0.7)},
+]
 var equipped_items = {
 	'weapon': null,
 	'armor': null,
@@ -84,6 +94,15 @@ var shop_recipes = [
 
 # 已学会的丹方列表
 var learned_recipes: Array = []
+# 丹方背包（未使用的丹方秘笈）
+var recipe_inventory: Array = []
+
+# 已学会的阵法列表
+var learned_arrays: Array = []
+# 当前洞府激活的阵法
+var active_array: String = ""
+# 阵法背包（未使用的阵法秘笈）
+var array_inventory: Array = []
 
 # 丹药背包 {丹药名: 数量}
 var pill_inventory: Dictionary = {}
@@ -93,9 +112,21 @@ var shop_skills = [
 	{'name': '吐纳术', 'desc': '基础修炼功法，修炼速度x1.1', 'price': 50, 'mana_bonus': 1.0, 'mana_bonus_pct': 0.10, 'min_realm': 1, 'color': Color(0.20, 0.85, 0.55)},
 	{'name': '聚灵诀', 'desc': '汇聚天地灵气，修炼速度x1.3', 'price': 200, 'mana_bonus': 3.0, 'mana_bonus_pct': 0.30, 'min_realm': 2, 'color': Color(0.15, 0.80, 0.55)},
 	{'name': '御风诀', 'desc': '风属性功法，修炼速度x1.5', 'price': 800, 'mana_bonus': 5.0, 'mana_bonus_pct': 0.50, 'min_realm': 3, 'color': Color(0.10, 0.75, 0.55)},
-	{'name': '焚天决', 'desc': '火属性功法，修炼速度x2.0', 'price': 3000, 'mana_bonus': 10.0, 'mana_bonus_pct': 1.00, 'min_realm': 4, 'color': Color(0.45, 0.75, 0.95)},
-	{'name': '冰心诀', 'desc': '冰属性功法，修炼速度x3.0', 'price': 10000, 'mana_bonus': 20.0, 'mana_bonus_pct': 2.00, 'min_realm': 7, 'color': Color(1.00, 0.85, 0.25)},
-	{'name': '天罡功', 'desc': '雷属性功法，修炼速度x6.0', 'price': 50000, 'mana_bonus': 50.0, 'mana_bonus_pct': 5.00, 'min_realm': 10, 'color': Color(0.75, 0.45, 0.95)},
+	{'name': '焚天决', 'desc': '火属性功法，修炼速度x2.0', 'price': 3000, 'mana_bonus': 10.0, 'mana_bonus_pct': 1.00, 'min_realm': 10, 'color': Color(0.45, 0.75, 0.95)},
+	{'name': '冰心诀', 'desc': '冰属性功法，修炼速度x3.0', 'price': 10000, 'mana_bonus': 20.0, 'mana_bonus_pct': 2.00, 'min_realm': 19, 'color': Color(1.00, 0.85, 0.25)},
+	{'name': '天罡功', 'desc': '雷属性功法，修炼速度x6.0', 'price': 50000, 'mana_bonus': 50.0, 'mana_bonus_pct': 5.00, 'min_realm': 28, 'color': Color(0.75, 0.45, 0.95)},
+]
+
+# 商店阵法列表
+var shop_arrays = [
+	{'name': '乾天阵', 'desc': '天道循环，洞府修炼速度+5%', 'price': 100, 'effect_type': 'cave_mana_pct', 'effect_value': 0.05, 'min_realm': 1, 'color': Color(1.0, 0.84, 0.0), 'trigram': '☰'},
+	{'name': '坤地阵', 'desc': '地势坤，防御+15%', 'price': 300, 'effect_type': 'def_pct', 'effect_value': 0.15, 'min_realm': 2, 'color': Color(0.8, 0.65, 0.15), 'trigram': '☷'},
+	{'name': '震雷阵', 'desc': '雷霆万钧，攻击+15%', 'price': 800, 'effect_type': 'atk_pct', 'effect_value': 0.15, 'min_realm': 3, 'color': Color(0.3, 0.8, 0.3), 'trigram': '☳'},
+	{'name': '离火阵', 'desc': '离火燎原，炼丹消耗-15%', 'price': 2500, 'effect_type': 'craft_discount', 'effect_value': 0.15, 'min_realm': 10, 'color': Color(1.0, 0.4, 0.2), 'trigram': '☲'},
+	{'name': '坎水阵', 'desc': '上善若水，HP上限+25%', 'price': 5000, 'effect_type': 'hp_pct', 'effect_value': 0.25, 'min_realm': 14, 'color': Color(0.2, 0.5, 1.0), 'trigram': '☵'},
+	{'name': '巽风阵', 'desc': '风行天下，参悟速度+25%', 'price': 12000, 'effect_type': 'comprehension_speed', 'effect_value': 0.25, 'min_realm': 18, 'color': Color(0.1, 0.85, 0.7), 'trigram': '☴'},
+	{'name': '艮山阵', 'desc': '不动如山，洞府建筑效果+20%', 'price': 30000, 'effect_type': 'building_boost', 'effect_value': 0.20, 'min_realm': 37, 'color': Color(0.7, 0.5, 0.2), 'trigram': '☶'},
+	{'name': '兑泽阵', 'desc': '泽被苍生，每秒灵气+15', 'price': 80000, 'effect_type': 'mana_flat', 'effect_value': 15.0, 'min_realm': 28, 'color': Color(0.9, 0.8, 0.3), 'trigram': '☱'},
 ]
 
 var shop_equipment = [
@@ -110,6 +141,17 @@ var shop_equipment = [
 	{'name': '拂尘', 'desc': '道家法器', 'price': 200, 'slot': 'artifact', 'atk_bonus': 3, 'def_bonus': 2, 'mana_bonus': 1, 'mana_bonus_pct': 0.10},
 	{'name': '八卦镜', 'desc': '镇邪驱魔', 'price': 1500, 'slot': 'artifact', 'atk_bonus': 10, 'def_bonus': 10, 'mana_bonus': 3, 'mana_bonus_pct': 0.30},
 ]
+
+var shop_furnaces = [
+	{'name': '青铜丹炉', 'desc': '基础炼丹炉，略微加快炼制速度', 'price': 500, 'speed_bonus': 0.10, 'success_bonus': 0.00, 'min_realm': 1, 'color': Color(0.8, 0.5, 0.2)},
+	{'name': '玄铁丹炉', 'desc': '玄铁铸就，炼丹速度+20%', 'price': 2000, 'speed_bonus': 0.20, 'success_bonus': 0.05, 'min_realm': 2, 'color': Color(0.4, 0.45, 0.55)},
+	{'name': '紫金丹炉', 'desc': '紫金铸造，炼丹速度+35%，成功率+10%', 'price': 8000, 'speed_bonus': 0.35, 'success_bonus': 0.10, 'min_realm': 10, 'color': Color(0.85, 0.65, 0.1)},
+	{'name': '九霄神炉', 'desc': '传说中的炉鼎，炼丹速度+60%，成功率+25%', 'price': 30000, 'speed_bonus': 0.60, 'success_bonus': 0.25, 'min_realm': 19, 'color': Color(1.0, 0.3, 0.85)},
+	{'name': '混沌天炉', 'desc': '混沌至宝，炼丹速度x2.0，成功率+40%', 'price': 150000, 'speed_bonus': 1.00, 'success_bonus': 0.40, 'min_realm': 28, 'color': Color(1.0, 0.84, 0.0)},
+]
+
+var furnace_inventory: Array = []
+var equipped_furnaces: Array = []
 
 const SAVE_PATH = "user://save.json"
 
@@ -218,7 +260,7 @@ const TECHNIQUE_DEFS = {
 	},
 	"burning_heaven": {
 		"name": "焚天决", "grade": 4, "desc": "火属性至强功法，焚尽八荒",
-		"price": 3000, "min_realm": 4,
+		"price": 3000, "min_realm": 10,
 		"color": Color(1.0, 0.45, 0.2),
 		"levels": [
 			{"time": 70, "mana_pct": 0.25, "atk": 3, "def": 0, "hp": 0, "effect": ""},
@@ -234,7 +276,7 @@ const TECHNIQUE_DEFS = {
 	},
 	"ice_heart": {
 		"name": "冰心诀", "grade": 4, "desc": "冰属性功法，心如寒冰",
-		"price": 10000, "min_realm": 7,
+		"price": 10000, "min_realm": 19,
 		"color": Color(0.30, 0.85, 1.0),
 		"levels": [
 			{"time": 80, "mana_pct": 0.30, "atk": 0, "def": 3, "hp": 0, "effect": ""},
@@ -250,7 +292,7 @@ const TECHNIQUE_DEFS = {
 	},
 	"celestial_art": {
 		"name": "天罡功", "grade": 5, "desc": "圣级功法，雷属性至强",
-		"price": 50000, "min_realm": 10,
+		"price": 50000, "min_realm": 28,
 		"color": Color(0.75, 0.30, 0.95),
 		"levels": [
 			{"time": 100, "mana_pct": 0.40, "atk": 8, "def": 3, "hp": 10, "effect": ""},
@@ -278,31 +320,51 @@ const TECHNIQUE_ID_MAP = {
 	"天罡功": "celestial_art",
 }
 
-# 境界列表，按顺序排列
-var realms = [
-	{'name': '练气一层', 'cost': 100, 'mana_bonus': 0.5, 'mana_bonus_pct': 0.05, 'color': Color(0.20, 0.85, 0.55)},
-	{'name': '练气二层', 'cost': 300, 'mana_bonus': 0.5, 'mana_bonus_pct': 0.05, 'color': Color(0.15, 0.80, 0.55)},
-	{'name': '练气三层', 'cost': 800, 'mana_bonus': 1.0, 'mana_bonus_pct': 0.10, 'color': Color(0.10, 0.75, 0.55)},
-	{'name': '筑基初期', 'cost': 2000, 'mana_bonus': 2.0, 'mana_bonus_pct': 0.20, 'color': Color(0.45, 0.75, 0.95)},
-	{'name': '筑基中期', 'cost': 5000, 'mana_bonus': 3.0, 'mana_bonus_pct': 0.30, 'color': Color(0.35, 0.70, 0.95)},
-	{'name': '筑基后期', 'cost': 12000, 'mana_bonus': 5.0, 'mana_bonus_pct': 0.50, 'color': Color(0.25, 0.65, 0.95)},
-	{'name': '金丹初期', 'cost': 30000, 'mana_bonus': 10.0, 'mana_bonus_pct': 1.00, 'color': Color(1.00, 0.85, 0.25)},
-	{'name': '金丹中期', 'cost': 80000, 'mana_bonus': 15.0, 'mana_bonus_pct': 1.50, 'color': Color(1.00, 0.78, 0.15)},
-	{'name': '金丹后期', 'cost': 200000, 'mana_bonus': 25.0, 'mana_bonus_pct': 2.50, 'color': Color(1.00, 0.70, 0.05)},
-	{'name': '元婴初期', 'cost': 500000, 'mana_bonus': 50.0, 'mana_bonus_pct': 5.00, 'color': Color(0.75, 0.45, 0.95)},
-	{'name': '元婴中期', 'cost': 1500000, 'mana_bonus': 80.0, 'mana_bonus_pct': 8.00, 'color': Color(0.70, 0.35, 0.95)},
-	{'name': '元婴后期', 'cost': 5000000, 'mana_bonus': 130.0, 'mana_bonus_pct': 13.00, 'color': Color(0.65, 0.25, 0.95)},
-	{'name': '化神初期', 'cost': 15000000, 'mana_bonus': 200.0, 'mana_bonus_pct': 20.00, 'color': Color(0.30, 0.55, 1.00)},
-	{'name': '化神中期', 'cost': 50000000, 'mana_bonus': 350.0, 'mana_bonus_pct': 35.00, 'color': Color(0.22, 0.45, 1.00)},
-	{'name': '化神后期', 'cost': 150000000, 'mana_bonus': 600.0, 'mana_bonus_pct': 60.00, 'color': Color(0.15, 0.35, 1.00)},
-	{'name': '合体初期', 'cost': 500000000, 'mana_bonus': 1000.0, 'mana_bonus_pct': 100.00, 'color': Color(1.00, 0.55, 0.20)},
-	{'name': '合体中期', 'cost': 2000000000, 'mana_bonus': 1800.0, 'mana_bonus_pct': 180.00, 'color': Color(1.00, 0.45, 0.10)},
-	{'name': '合体后期', 'cost': 8000000000, 'mana_bonus': 3000.0, 'mana_bonus_pct': 300.00, 'color': Color(0.95, 0.35, 0.05)},
-	{'name': '大乘初期', 'cost': 30000000000, 'mana_bonus': 5000.0, 'mana_bonus_pct': 500.00, 'color': Color(1.00, 0.25, 0.35)},
-	{'name': '大乘中期', 'cost': 100000000000, 'mana_bonus': 9000.0, 'mana_bonus_pct': 900.00, 'color': Color(0.95, 0.15, 0.25)},
-	{'name': '大乘后期', 'cost': 500000000000, 'mana_bonus': 15000.0, 'mana_bonus_pct': 1500.00, 'color': Color(0.90, 0.05, 0.20)},
-	{'name': '渡劫期', 'cost': 2000000000000, 'mana_bonus': 30000.0, 'mana_bonus_pct': 3000.00, 'color': Color(1.00, 0.92, 0.55)},
+# 境界宏定义：每个大境界含9个小层次
+const REALM_MACRO = [
+	{'name': '练气', 'hp_start': 100, 'hp_end': 200, 'atk_start': 10, 'atk_end': 20, 'cost_start': 100, 'cost_growth': 1.8, 'color': Color(0.20, 0.85, 0.55)},
+	{'name': '筑基', 'hp_start': 500, 'hp_end': 1000, 'atk_start': 50, 'atk_end': 100, 'cost_start': 2000, 'cost_growth': 1.8, 'color': Color(0.45, 0.75, 0.95)},
+	{'name': '金丹', 'hp_start': 2500, 'hp_end': 5000, 'atk_start': 250, 'atk_end': 500, 'cost_start': 30000, 'cost_growth': 1.8, 'color': Color(1.00, 0.85, 0.25)},
+	{'name': '元婴', 'hp_start': 12500, 'hp_end': 25000, 'atk_start': 1250, 'atk_end': 2500, 'cost_start': 500000, 'cost_growth': 1.8, 'color': Color(0.75, 0.45, 0.95)},
+	{'name': '化神', 'hp_start': 62500, 'hp_end': 125000, 'atk_start': 6250, 'atk_end': 12500, 'cost_start': 8000000, 'cost_growth': 1.8, 'color': Color(0.30, 0.55, 1.00)},
+	{'name': '合体', 'hp_start': 312500, 'hp_end': 625000, 'atk_start': 31250, 'atk_end': 62500, 'cost_start': 130000000, 'cost_growth': 1.8, 'color': Color(1.00, 0.55, 0.20)},
+	{'name': '大乘', 'hp_start': 1560000, 'hp_end': 3120000, 'atk_start': 156250, 'atk_end': 312500, 'cost_start': 2000000000, 'cost_growth': 1.8, 'color': Color(1.00, 0.25, 0.35)},
+	{'name': '渡劫', 'hp_start': 7810000, 'hp_end': 15600000, 'atk_start': 781250, 'atk_end': 1560000, 'cost_start': 35000000000, 'cost_growth': 1.8, 'color': Color(1.00, 0.92, 0.55)},
+	{'name': '真仙', 'hp_start': 39100000, 'hp_end': 78100000, 'atk_start': 3910000, 'atk_end': 7810000, 'cost_start': 500000000000, 'cost_growth': 1.8, 'color': Color(0.55, 1.00, 0.55)},
+	{'name': '金仙', 'hp_start': 195000000, 'hp_end': 391000000, 'atk_start': 19500000, 'atk_end': 39100000, 'cost_start': 8000000000000, 'cost_growth': 1.8, 'color': Color(1.00, 0.84, 0.00)},
+	{'name': '太乙', 'hp_start': 977000000, 'hp_end': 1950000000, 'atk_start': 97700000, 'atk_end': 195000000, 'cost_start': 120000000000000, 'cost_growth': 1.8, 'color': Color(0.60, 0.40, 1.00)},
+	{'name': '大罗', 'hp_start': 4880000000, 'hp_end': 9760000000, 'atk_start': 488000000, 'atk_end': 977000000, 'cost_start': 2000000000000000, 'cost_growth': 1.8, 'color': Color(0.30, 0.90, 0.90)},
+	{'name': '混元', 'hp_start': 24400000000, 'hp_end': 48800000000, 'atk_start': 2440000000, 'atk_end': 4880000000, 'cost_start': 30000000000000000, 'cost_growth': 1.8, 'color': Color(0.50, 0.10, 0.50)},
 ]
+
+func _build_realms() -> Array:
+	var result = []
+	for macro in REALM_MACRO:
+		var layers = 9
+		var hp_step = (macro['hp_end'] - macro['hp_start']) / float(layers - 1)
+		var atk_step = (macro['atk_end'] - macro['atk_start']) / float(layers - 1)
+		for lv in range(layers):
+			var hp = int(macro['hp_start'] + hp_step * lv)
+			var atk = int(macro['atk_start'] + atk_step * lv)
+			var def = int(atk * 0.65)
+			var cost = int(macro['cost_start'] * pow(macro['cost_growth'], lv))
+			var mana_bonus = hp * 0.01
+			var mana_pct = atk * 0.0001
+			var layer_names = ['一', '二', '三', '四', '五', '六', '七', '八', '九']
+			result.append({
+				'name': macro['name'] + layer_names[lv] + '层',
+				'cost': cost,
+				'mana_bonus': mana_bonus,
+				'mana_bonus_pct': mana_pct,
+				'atk_bonus': atk,
+				'def_bonus': def,
+				'hp_bonus': hp,
+				'color': macro['color'],
+			})
+	return result
+
+# 境界列表，按顺序排列（由宏定义生成）
+var realms = _build_realms()
 
 # 地图数据
 var maps = [
@@ -310,62 +372,95 @@ var maps = [
 		'name': '青云山麓', 'desc': '灵气充裕的山脚，适合初入修仙者',
 		'min_level': 1, 'color': Color(0.3, 0.8, 0.3),
 		'enemies': [
-			{'name': '妖蛛', 'hp': 30, 'atk': 5, 'def': 2, 'exp': 10},
-			{'name': '灰狼', 'hp': 50, 'atk': 8, 'def': 3, 'exp': 15},
-			{'name': '毒蛇', 'hp': 40, 'atk': 10, 'def': 1, 'exp': 12},
+			{'name': '妖蛛', 'hp': 20, 'atk': 3, 'def': 1, 'exp': 10},
+			{'name': '灰狼', 'hp': 35, 'atk': 5, 'def': 2, 'exp': 15},
+			{'name': '毒蛇', 'hp': 28, 'atk': 7, 'def': 1, 'exp': 12},
+			{'name': '石魔', 'hp': 50, 'atk': 4, 'def': 4, 'exp': 18},
+			{'name': '妖兔', 'hp': 15, 'atk': 2, 'def': 0, 'exp': 8},
 		]
 	},
 	{
 		'name': '黑风谷', 'desc': '妖兽出没的峡谷，暗藏凶险',
 		'min_level': 3, 'color': Color(0.5, 0.3, 0.3),
 		'enemies': [
-			{'name': '黑风虎', 'hp': 120, 'atk': 18, 'def': 8, 'exp': 30},
-			{'name': '岩甲兽', 'hp': 200, 'atk': 12, 'def': 15, 'exp': 35},
-			{'name': '噬魂蝠', 'hp': 80, 'atk': 22, 'def': 5, 'exp': 28},
+			{'name': '黑风虎', 'hp': 80, 'atk': 14, 'def': 6, 'exp': 30},
+			{'name': '岩甲兽', 'hp': 150, 'atk': 10, 'def': 12, 'exp': 35},
+			{'name': '噬魂蝠', 'hp': 60, 'atk': 18, 'def': 4, 'exp': 28},
+			{'name': '腐尸鬼', 'hp': 120, 'atk': 12, 'def': 8, 'exp': 32},
+			{'name': '毒雾蟾', 'hp': 90, 'atk': 16, 'def': 5, 'exp': 25},
+			{'name': '黑影妖', 'hp': 70, 'atk': 20, 'def': 2, 'exp': 27},
 		]
 	},
 	{
 		'name': '天雷泽', 'desc': '雷电交加的沼泽，危机四伏',
-		'min_level': 5, 'color': Color(0.6, 0.5, 1),
+		'min_level': 10, 'color': Color(0.6, 0.5, 1),
 		'enemies': [
-			{'name': '雷蛟', 'hp': 350, 'atk': 35, 'def': 18, 'exp': 80},
-			{'name': '电鳗妖', 'hp': 250, 'atk': 40, 'def': 10, 'exp': 70},
-			{'name': '霹雳熊', 'hp': 450, 'atk': 30, 'def': 25, 'exp': 90},
+			{'name': '雷蛟', 'hp': 400, 'atk': 60, 'def': 25, 'exp': 200},
+			{'name': '电鳗妖', 'hp': 300, 'atk': 75, 'def': 15, 'exp': 180},
+			{'name': '霹雳熊', 'hp': 550, 'atk': 50, 'def': 35, 'exp': 220},
+			{'name': '雷鹰', 'hp': 250, 'atk': 80, 'def': 10, 'exp': 190},
+			{'name': '沼泽巨鳄', 'hp': 600, 'atk': 45, 'def': 40, 'exp': 210},
+			{'name': '风暴妖', 'hp': 350, 'atk': 65, 'def': 20, 'exp': 195},
 		]
 	},
 	{
 		'name': '九幽冥海', 'desc': '阴气深重的海域，九死一生',
-		'min_level': 7, 'color': Color(0.3, 0.2, 0.6),
+		'min_level': 19, 'color': Color(0.3, 0.2, 0.6),
 		'enemies': [
-			{'name': '冥海巨蟒', 'hp': 800, 'atk': 60, 'def': 30, 'exp': 200},
-			{'name': '幽冥鬼将', 'hp': 600, 'atk': 75, 'def': 20, 'exp': 220},
-			{'name': '九头妖龙', 'hp': 1200, 'atk': 50, 'def': 40, 'exp': 300},
+			{'name': '冥海巨蟒', 'hp': 3000, 'atk': 500, 'def': 200, 'exp': 800},
+			{'name': '幽冥鬼将', 'hp': 2500, 'atk': 650, 'def': 150, 'exp': 850},
+			{'name': '九头妖龙', 'hp': 4500, 'atk': 400, 'def': 300, 'exp': 1000},
+			{'name': '深海夜叉', 'hp': 2800, 'atk': 550, 'def': 180, 'exp': 820},
+			{'name': '海妖女', 'hp': 2200, 'atk': 700, 'def': 120, 'exp': 880},
+			{'name': '幽灵船长', 'hp': 3800, 'atk': 450, 'def': 250, 'exp': 900},
 		]
 	},
 ]
 
 # ==================== 核心辅助函数 ====================
 
+func get_realm_atk_bonus() -> float:
+	if realm_level <= 0 or realm_level > realms.size():
+		return 0.0
+	return realms[realm_level - 1].get('atk_bonus', 0.0)
+
+func get_realm_def_bonus() -> float:
+	if realm_level <= 0 or realm_level > realms.size():
+		return 0.0
+	return realms[realm_level - 1].get('def_bonus', 0.0)
+
+func get_realm_hp_bonus() -> float:
+	if realm_level <= 0 or realm_level > realms.size():
+		return 0.0
+	return realms[realm_level - 1].get('hp_bonus', 0.0)
+
+func get_realm_mana_bonus() -> float:
+	if realm_level <= 0 or realm_level > realms.size():
+		return 0.0
+	return realms[realm_level - 1].get('mana_bonus', 0.0)
+
 func get_player_atk() -> float:
-	var atk = realm_level * 15.0 + get_technique_atk_bonus()
+	var atk = get_realm_atk_bonus() + get_technique_atk_bonus()
 	for s in EQUIPMENT_SLOTS:
 		var ei = equipped_items[s]
 		if ei != null:
 			atk += ei['atk_bonus']
 	var bh_lv = talents.get('battle_hardened', 0)
 	atk *= 1.0 + 0.10 * bh_lv
+	atk *= 1.0 + get_active_array_bonus('atk_pct')
 	return atk
 
 func get_player_def() -> float:
-	var def = realm_level * 10.0 + get_technique_def_bonus()
+	var def = get_realm_def_bonus() + get_technique_def_bonus()
 	for s in EQUIPMENT_SLOTS:
 		var ei = equipped_items[s]
 		if ei != null:
 			def += ei['def_bonus']
+	def *= 1.0 + get_active_array_bonus('def_pct')
 	return def
 
 func update_max_hp():
-	player_max_hp = 100.0 + realm_level * 50.0 + get_technique_hp_bonus()
+	player_max_hp = (100.0 + get_realm_hp_bonus() + get_technique_hp_bonus()) * (1.0 + get_active_array_bonus('hp_pct'))
 	if player_hp > player_max_hp:
 		player_hp = player_max_hp
 
@@ -383,7 +478,8 @@ func _process_comprehension(delta: float):
 		comprehension_progress = 0.0
 		return
 	var lib_bonus = 1.0 + 0.15 * cave_buildings.get("library", {}).get("level", 0)
-	comprehension_progress += delta * lib_bonus
+	var array_comprehension_bonus = get_active_array_bonus('comprehension_speed')
+	comprehension_progress += delta * lib_bonus * (1.0 + array_comprehension_bonus)
 	if comprehension_progress >= comprehension_time_total:
 		_complete_comprehension()
 
@@ -522,6 +618,31 @@ func _format_num(n: float) -> String:
 		result += s[i]
 	return result
 
+const BIG_UNITS = ['', '万', '亿', '兆', '京', '垓', '秭', '穰', '沟', '涧', '正', '载', '极']
+
+func _format_big(n: float) -> String:
+	if n < 10000:
+		return _format_num(n)
+	var val = n
+	var unit_idx = 0
+	while val >= 10000 and unit_idx < BIG_UNITS.size() - 1:
+		val /= 10000.0
+		unit_idx += 1
+	if val >= 10000:
+		val /= 10000.0
+		unit_idx += 1
+	var s = str(val)
+	var dot = s.find(".")
+	if dot > 0:
+		if dot >= 4:
+			s = s.substr(0, 4)
+		else:
+			s = s.substr(0, min(s.length(), dot + 2))
+	else:
+		if s.length() > 4:
+			s = s.substr(0, 4)
+	return s + BIG_UNITS[unit_idx]
+
 func _num_to_chinese(n: int) -> String:
 	var digits = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"]
 	if n >= 0 and n < digits.size():
@@ -582,15 +703,25 @@ func _ready():
 	$PanelInventory.sell_pill_requested.connect(_on_sell_pill)
 	$PanelInventory.equip_item_requested.connect(_on_equip_from_inventory)
 	$PanelInventory.sell_equipment_requested.connect(_on_sell_equipment_from_inventory)
+	$PanelInventory.use_array_requested.connect(_on_use_array)
+	$PanelInventory.sell_array_requested.connect(_on_sell_array)
+	$PanelInventory.use_recipe_requested.connect(_on_use_recipe)
+	$PanelInventory.sell_recipe_requested.connect(_on_sell_recipe)
+	$PanelInventory.sell_furnace_requested.connect(_on_sell_furnace_from_inventory)
 	$PanelShop.back_requested.connect(_on_back)
 	$PanelShop.buy_skill_requested.connect(_on_buy_skill)
 	$PanelShop.buy_recipe_requested.connect(_on_buy_recipe)
 	$PanelShop.buy_equipment_requested.connect(_on_buy_equipment)
+	$PanelShop.buy_array_requested.connect(_on_buy_array)
+	$PanelShop.buy_furnace_requested.connect(_on_buy_furnace)
 	$PanelCave.upgrade_cave_requested.connect(_on_cave_upgrade)
 	$PanelCave.building_action_requested.connect(_on_building_action)
 	$PanelCave.craft_pill_requested.connect(_on_craft_pill_by_name)
 	$PanelCave.use_pill_requested.connect(_on_use_pill)
 	$PanelCave.back_requested.connect(_on_back)
+	$PanelCave.set_array_requested.connect(_on_set_active_array)
+	$PanelCave.equip_furnace_requested.connect(_on_equip_furnace)
+	$PanelCave.unequip_furnace_requested.connect(_on_unequip_furnace)
 	$PanelEquipment.back_requested.connect(_on_back)
 	$PanelEquipment.unequip_requested.connect(_on_unequip)
 	$PanelMap.back_requested.connect(_on_back)
@@ -601,6 +732,13 @@ func _ready():
 	$PanelTalents.select_spirit_root_requested.connect(_on_select_spirit_root)
 	# 连接兵解确认
 	$ReincarnateConfirm.confirmed.connect(_on_reincarnate_confirmed)
+	# 动态创建帮助面板
+	var help_scene = load("res://scripts/help_panel.gd")
+	var panel_help = help_scene.new()
+	panel_help.name = "PanelHelp"
+	panel_help.visible = false
+	add_child(panel_help)
+	panel_help.back_requested.connect(_on_back)
 	# 绑定菜单按钮
 	$MenuBar/BtnProfile.pressed.connect(_on_btn_profile)
 	$MenuBar/BtnSkills.pressed.connect(_on_btn_skills)
@@ -610,6 +748,12 @@ func _ready():
 	$MenuBar/BtnTalents.pressed.connect(_on_btn_talents)
 	$MenuBar/BtnEquipment.pressed.connect(_on_btn_equipment)
 	$MenuBar/BtnMap.pressed.connect(_on_btn_map)
+	# 动态添加帮助按钮
+	var btn_help = Button.new()
+	btn_help.text = "帮助"
+	btn_help.add_theme_font_size_override("font_size", 12)
+	btn_help.pressed.connect(_on_btn_help)
+	$MenuBar.add_child(btn_help)
 	show_panel("")
 
 # ==================== 存档 ====================
@@ -639,11 +783,17 @@ func save_game():
 		'comprehension_time_total': comprehension_time_total,
 		'learned_recipes': learned_recipes,
 		'pill_inventory': pill_inventory,
+		'learned_arrays': learned_arrays,
+		'active_array': active_array,
+		'array_inventory': array_inventory,
+		'recipe_inventory': recipe_inventory,
 		'player_name': player_name,
 		'spirit_root': spirit_root,
 		'age': age,
 		'equipped_items': equipped_items,
 		'equipment_inventory': equipment_inventory,
+		'furnace_inventory': furnace_inventory,
+		'equipped_furnaces': equipped_furnaces,
 		'player_hp': player_hp,
 		'cave_level': cave_level,
 		'cave_buildings': cave_buildings,
@@ -689,6 +839,10 @@ func load_save():
 	comprehension_progress = data.get('comprehension_progress', 0.0)
 	comprehension_time_total = data.get('comprehension_time_total', 0.0)
 	learned_recipes = data.get('learned_recipes', [])
+	learned_arrays = data.get('learned_arrays', [])
+	active_array = data.get('active_array', "")
+	array_inventory = data.get('array_inventory', [])
+	recipe_inventory = data.get('recipe_inventory', [])
 	pill_inventory = data.get('pill_inventory', {})
 	player_name = data.get('player_name', "")
 	spirit_root = data.get('spirit_root', {})
@@ -697,6 +851,24 @@ func load_save():
 	if loaded_eq.size() > 0:
 		equipped_items = loaded_eq
 	player_hp = data.get('player_hp', 100.0)
+	furnace_inventory = data.get('furnace_inventory', [])
+	equipped_furnaces = data.get('equipped_furnaces', [])
+	_fix_furnace_colors(furnace_inventory)
+	_fix_furnace_colors(equipped_furnaces)
+
+func _fix_furnace_colors(arr: Array):
+	for item in arr:
+		if item == null:
+			continue
+		if not item is Dictionary:
+			continue
+		if item.has('color') and not item['color'] is Color:
+			var col_str = str(item['color'])
+			var parts = col_str.split(",")
+			if parts.size() >= 3:
+				item['color'] = Color(float(parts[0]), float(parts[1]), float(parts[2]))
+			else:
+				item['color'] = Color(0.8, 0.5, 0.2)
 
 func calc_offline_earnings():
 	if not FileAccess.file_exists(SAVE_PATH):
@@ -766,7 +938,9 @@ func get_next_realm_cost() -> int:
 # ==================== 乘区计算 ====================
 
 func recalc_mana_per_sec():
-	mana_per_sec = (base_mana + cave_base_bonus + talent_mana_bonus) * realm_multiplier * technique_multiplier * cave_multiplier * artifact_multiplier * time_coefficient * talent_multiplier + pill_flat_bonus
+	var array_flat = get_active_array_bonus('mana_flat')
+	var realm_mana = get_realm_mana_bonus()
+	mana_per_sec = (base_mana + realm_mana + cave_base_bonus + talent_mana_bonus + array_flat) * realm_multiplier * technique_multiplier * cave_multiplier * artifact_multiplier * time_coefficient * talent_multiplier + pill_flat_bonus
 
 func recalc_realm_multiplier():
 	var sum = 0.0
@@ -800,17 +974,17 @@ func recalc_talent_bonuses():
 func log_message(msg: String):
 	var time = Time.get_time_string_from_system()
 	$MessageLog.append_text("[color=gray]" + time + "[/color] " + msg + "\n")
-	var lines = $MessageLog.get_line_count()
+	var lines = $MessageLog.get_paragraph_count()
 	if lines > max_log_lines:
-		$MessageLog.remove_line(0)
+		$MessageLog.remove_paragraph(0)
 
 func update_ui():
-	$Label.text = "灵气：" + str(int(spiritual_energy))
-	$Label2.text = "每秒灵气：" + str(int(mana_per_sec))
+	$Label.text = "灵气：" + _format_big(spiritual_energy)
+	$Label2.text = "每秒灵气：" + _format_big(mana_per_sec)
 	$Label3.text = "境界：" + realm
 	$Label3.add_theme_color_override("font_color", get_realm_color())
-	$Label4.text = "突破所需：" + (str(get_next_realm_cost()) if get_next_realm_cost() > 0 else "已达最高境界")
-	$Label5.text = "HP：" + str(int(player_hp)) + "/" + str(int(player_max_hp))
+	$Label4.text = "突破所需：" + (_format_big(get_next_realm_cost()) if get_next_realm_cost() > 0 else "已达最高境界")
+	$Label5.text = "HP：" + _format_big(player_hp) + "/" + _format_big(player_max_hp)
 
 func get_realm_color() -> Color:
 	if realm_level >= 1 and realm_level <= realms.size():
@@ -837,6 +1011,7 @@ func show_panel(panel_name: String):
 	$PanelEquipment.visible = (panel_name == "equipment")
 	$PanelMap.visible = (panel_name == "map")
 	$PanelTalents.visible = (panel_name == "talents")
+	$PanelHelp.visible = (panel_name == "help")
 	$ReincarnateConfirm.visible = false
 
 func _on_back():
@@ -867,6 +1042,7 @@ func _refresh_profile():
 		'realms': realms,
 		'base_mana': base_mana,
 		'cave_base_bonus': cave_base_bonus,
+		'realm_mana_bonus': get_realm_mana_bonus(),
 		'realm_multiplier': realm_multiplier,
 		'technique_multiplier': technique_multiplier,
 		'cave_multiplier': cave_multiplier,
@@ -875,7 +1051,7 @@ func _refresh_profile():
 		'pill_flat_bonus': pill_flat_bonus,
 		'player_hp': player_hp,
 		'player_max_hp': player_max_hp,
-		'reincarnation_clickable': realm_level >= 10 and realm_level < realms.size(),
+		'reincarnation_clickable': realm_level >= 19 and realm_level < realms.size(),
 		'player_atk': get_player_atk(),
 		'player_def': get_player_def(),
 		'spirit_roots_list': SPIRIT_ROOTS,
@@ -896,8 +1072,13 @@ func _refresh_inventory():
 		'inventory': inventory,
 		'pill_inventory': pill_inventory,
 		'equipment_inventory': equipment_inventory,
+		'array_inventory': array_inventory,
+		'recipe_inventory': recipe_inventory,
+		'furnace_inventory': furnace_inventory,
 		'shop_skills': shop_skills,
 		'shop_recipes': shop_recipes,
+		'shop_arrays': shop_arrays,
+		'shop_furnaces': shop_furnaces,
 		'realms': realms,
 		'sell_ratio': SELL_RATIO,
 		'realm_level': realm_level,
@@ -911,10 +1092,16 @@ func _refresh_shop():
 		'shop_skills': shop_skills,
 		'shop_recipes': shop_recipes,
 		'shop_equipment': shop_equipment,
+		'shop_arrays': shop_arrays,
+		'shop_furnaces': shop_furnaces,
 		'learned_techniques': learned_techniques,
 		'learned_recipes': learned_recipes,
+		'learned_arrays': learned_arrays,
+		'array_inventory': array_inventory,
+		'recipe_inventory': recipe_inventory,
 		'equipped_items': equipped_items,
 		'equipment_inventory': equipment_inventory,
+		'furnace_inventory': furnace_inventory,
 		'realms': realms,
 		'equipment_slots': EQUIPMENT_SLOTS,
 		'equipment_slot_names': EQUIPMENT_SLOT_NAMES,
@@ -932,11 +1119,8 @@ func _refresh_map():
 		'maps': maps,
 		'realm_level': realm_level,
 		'in_battle': in_battle,
-		'current_enemy': current_enemy,
-		'player_hp': player_hp,
-		'player_max_hp': player_max_hp,
-		'player_atk': get_player_atk(),
-		'player_def': get_player_def(),
+		'enemy_team': enemy_team,
+		'ally_team': ally_team,
 		'battle_log': battle_log,
 	})
 	$PanelMap.refresh()
@@ -949,6 +1133,12 @@ func _refresh_talents():
 		'reincarnation_count': reincarnation_count,
 	})
 	$PanelTalents.refresh()
+
+func _refresh_help():
+	$PanelHelp.set_state({
+		'realms': realms,
+	})
+	$PanelHelp.refresh()
 
 # ==================== 菜单按钮 ====================
 
@@ -988,6 +1178,45 @@ func _on_btn_talents():
 	show_panel("talents")
 	_refresh_talents()
 
+func _on_btn_help():
+	show_panel("help")
+	_refresh_help()
+
+func get_max_furnace_slots() -> int:
+	var room_lv = cave_buildings.get('alchemy_furnace', {}).get('level', 0)
+	if room_lv <= 0:
+		return 0
+	elif room_lv <= 2:
+		return 1
+	elif room_lv <= 4:
+		return 2
+	else:
+		return 3
+
+func get_furnace_bonuses() -> Dictionary:
+	var room_lv = cave_buildings.get('alchemy_furnace', {}).get('level', 0)
+	var speed_bonus = 0.1 * room_lv
+	var success_bonus = 0.0
+	var cost_reduction = 0.05 * room_lv
+	for furnace in equipped_furnaces:
+		if furnace != null and furnace.has('speed_bonus'):
+			speed_bonus += furnace['speed_bonus']
+			success_bonus += furnace.get('success_bonus', 0.0)
+	if speed_bonus < 0:
+		speed_bonus = 0.0
+	if success_bonus < 0:
+		success_bonus = 0.0
+	return {"speed": speed_bonus, "success": success_bonus, "cost_reduction": cost_reduction}
+
+func _furnace_already_owned(furnace_name: String) -> bool:
+	for f in furnace_inventory:
+		if f.get('name', '') == furnace_name:
+			return true
+	for f in equipped_furnaces:
+		if f != null and f.get('name', '') == furnace_name:
+			return true
+	return false
+
 # ==================== 商店 ====================
 
 func _on_buy_skill(skill: Dictionary):
@@ -1013,16 +1242,47 @@ func _on_buy_skill(skill: Dictionary):
 	if $PanelInventory.visible: _refresh_inventory()
 
 func _on_buy_recipe(recipe: Dictionary):
-	if is_recipe_learned(recipe['name']):
-		log_message("[color=red]已学会丹方" + recipe['name'] + "，无需重复购买[/color]")
+	var recipe_name = recipe['name']
+	if is_recipe_learned(recipe_name):
+		log_message("[color=red]已学会丹方" + recipe_name + "，无需重复购买[/color]")
 		return
+	for r in recipe_inventory:
+		if r['name'] == recipe_name:
+			log_message("[color=red]背包中已有" + recipe_name + "[/color]")
+			return
 	if spiritual_energy < recipe['price']:
-		log_message("[color=red]灵气不足，无法购买丹方" + recipe['name'] + "[/color]")
+		log_message("[color=red]灵气不足，无法购买丹方" + recipe_name + "[/color]")
 		return
 	spiritual_energy -= recipe['price']
-	learned_recipes.append(recipe)
-	log_message("[color=green]购买丹方成功：" + recipe['name'] + "[/color]")
+	recipe_inventory.append(recipe.duplicate())
+	log_message("[color=green]购买丹方秘笈：" + recipe_name + "，已放入背包[/color]")
 	if $PanelShop.visible: _refresh_shop()
+	if $PanelInventory.visible: _refresh_inventory()
+
+func _on_use_recipe(index: int):
+	if index >= recipe_inventory.size():
+		return
+	var recipe = recipe_inventory[index]
+	var recipe_name = recipe['name']
+	if is_recipe_learned(recipe_name):
+		log_message("[color=red]已学会丹方" + recipe_name + "[/color]")
+		recipe_inventory.remove_at(index)
+		return
+	recipe_inventory.remove_at(index)
+	learned_recipes.append(recipe)
+	log_message("[color=cyan]习得丹方：" + recipe_name + "（" + recipe.get('desc', '') + "）[/color]")
+	if $PanelInventory.visible: _refresh_inventory()
+	if $PanelCave.visible: refresh_cave()
+
+func _on_sell_recipe(index: int):
+	if index >= recipe_inventory.size():
+		return
+	var recipe = recipe_inventory[index]
+	var sell_price = int(recipe['price'] * SELL_RATIO)
+	spiritual_energy += sell_price
+	recipe_inventory.remove_at(index)
+	log_message("[color=yellow]出售了丹方秘笈【" + recipe['name'] + "】，获得" + _format_num(sell_price) + "灵气[/color]")
+	if $PanelInventory.visible: _refresh_inventory()
 
 func _on_buy_equipment(item: Dictionary):
 	if spiritual_energy < item['price']:
@@ -1033,6 +1293,107 @@ func _on_buy_equipment(item: Dictionary):
 	log_message("[color=green]购买成功：" + item['name'] + "，已放入背包，请在背包中装备[/color]")
 	if $PanelShop.visible: _refresh_shop()
 	if $PanelInventory.visible: _refresh_inventory()
+
+func _on_buy_furnace(furnace: Dictionary):
+	var fname = furnace['name']
+	if _furnace_already_owned(fname):
+		log_message("[color=red]已拥有" + fname + "，无需重复购买[/color]")
+		return
+	if realm_level < furnace.get('min_realm', 1):
+		var req_realm = realms[furnace['min_realm'] - 1]['name']
+		log_message("[color=red]境界不足！需要达到" + req_realm + "才能使用" + fname + "[/color]")
+		return
+	if spiritual_energy < furnace['price']:
+		log_message("[color=red]灵气不足，无法购买" + fname + "[/color]")
+		return
+	spiritual_energy -= furnace['price']
+	furnace_inventory.append(furnace.duplicate())
+	log_message("[color=green]购买成功：" + fname + "，已放入背包[/color]")
+	if $PanelShop.visible: _refresh_shop()
+	if $PanelInventory.visible: _refresh_inventory()
+
+func _on_buy_array(array_data: Dictionary):
+	var array_name = array_data['name']
+	if learned_arrays.has(array_name) or array_inventory.has(array_name):
+		log_message("[color=red]已拥有" + array_name + "，无需重复购买[/color]")
+		return
+	if realm_level < array_data.get('min_realm', 1):
+		var req_realm = realms[array_data['min_realm'] - 1]['name']
+		log_message("[color=red]境界不足！需要达到" + req_realm + "才能布置" + array_name + "[/color]")
+		return
+	if spiritual_energy < array_data['price']:
+		log_message("[color=red]灵气不足，无法购买" + array_name + "[/color]")
+		return
+	spiritual_energy -= array_data['price']
+	array_inventory.append(array_name)
+	log_message("[color=green]购买阵法秘笈：" + array_name + "，已放入背包[/color]")
+	if $PanelShop.visible: _refresh_shop()
+	if $PanelInventory.visible: _refresh_inventory()
+
+func _on_use_array(index: int):
+	if index >= array_inventory.size():
+		return
+	var array_name = array_inventory[index]
+	if learned_arrays.has(array_name):
+		log_message("[color=red]已学会" + array_name + "，无法重复学习[/color]")
+		return
+	var arr_data = _get_array_data(array_name)
+	if arr_data.is_empty():
+		log_message("[color=red]未知阵法：" + array_name + "[/color]")
+		return
+	if realm_level < arr_data.get('min_realm', 1):
+		var req_realm = realms[arr_data['min_realm'] - 1]['name']
+		log_message("[color=red]境界不足！需要达到" + req_realm + "才能学习" + array_name + "[/color]")
+		return
+	array_inventory.remove_at(index)
+	learned_arrays.append(array_name)
+	log_message("[color=cyan]习得阵法：" + array_name + "（" + arr_data['desc'] + "）[/color]")
+	if $PanelInventory.visible: _refresh_inventory()
+	if $PanelCave.visible: refresh_cave()
+
+func _on_sell_array(index: int):
+	if index >= array_inventory.size():
+		return
+	var array_name = array_inventory[index]
+	var arr_data = _get_array_data(array_name)
+	if arr_data.is_empty():
+		log_message("[color=red]未知阵法：" + array_name + "[/color]")
+		return
+	var sell_price = int(arr_data['price'] * SELL_RATIO)
+	spiritual_energy += sell_price
+	array_inventory.remove_at(index)
+	log_message("[color=yellow]出售了阵法秘笈【" + array_name + "】，获得" + _format_num(sell_price) + "灵气[/color]")
+	if $PanelInventory.visible: _refresh_inventory()
+
+func _on_set_active_array(array_name: String):
+	if array_name == "":
+		active_array = ""
+		log_message("[color=gray]已取消当前阵法[/color]")
+	elif learned_arrays.has(array_name):
+		active_array = array_name
+		var arr_data = _get_array_data(array_name)
+		log_message("[color=cyan]洞府已激活阵法：" + array_name + "（" + arr_data.desc + "）[/color]")
+	else:
+		log_message("[color=red]未学会" + array_name + "[/color]")
+		return
+	recalc_cave_bonuses()
+	recalc_mana_per_sec()
+	update_max_hp()
+	if $PanelCave.visible: refresh_cave()
+
+func _get_array_data(array_name: String) -> Dictionary:
+	for arr in shop_arrays:
+		if arr['name'] == array_name:
+			return arr
+	return {}
+
+func get_active_array_bonus(effect_type: String) -> float:
+	if active_array == "":
+		return 0.0
+	var arr = _get_array_data(active_array)
+	if arr.is_empty() or arr.get('effect_type') != effect_type:
+		return 0.0
+	return arr.get('effect_value', 0.0)
 
 # ==================== 背包操作 ====================
 
@@ -1121,11 +1482,60 @@ func _on_sell_equipment_from_inventory(index: int):
 	log_message("[color=yellow]出售了【" + item['name'] + "】，获得" + _format_num(sell_price) + "灵气[/color]")
 	if $PanelInventory.visible: _refresh_inventory()
 
+func _on_equip_furnace(slot_index: int, inventory_index: int):
+	if inventory_index >= furnace_inventory.size():
+		return
+	var max_slots = get_max_furnace_slots()
+	if slot_index < 0 or slot_index >= max_slots:
+		return
+	while equipped_furnaces.size() < max_slots:
+		equipped_furnaces.append(null)
+	while equipped_furnaces.size() > max_slots:
+		var extra = equipped_furnaces.pop_back()
+		if extra != null:
+			furnace_inventory.append(extra)
+	var old = equipped_furnaces[slot_index]
+	if old != null:
+		furnace_inventory.append(old)
+	var furnace = furnace_inventory[inventory_index]
+	equipped_furnaces[slot_index] = furnace
+	furnace_inventory.remove_at(inventory_index)
+	log_message("[color=green]已将" + furnace['name'] + "安装到丹炉槽位" + str(slot_index + 1) + "[/color]")
+	if $PanelInventory.visible: _refresh_inventory()
+	if $PanelCave.visible: refresh_cave()
+
+func _on_unequip_furnace(slot_index: int):
+	var max_slots = get_max_furnace_slots()
+	if slot_index < 0 or slot_index >= equipped_furnaces.size():
+		return
+	var furnace = equipped_furnaces[slot_index]
+	if furnace == null:
+		return
+	equipped_furnaces[slot_index] = null
+	furnace_inventory.append(furnace)
+	log_message("[color=gray]卸下了" + furnace['name'] + "[/color]")
+	while equipped_furnaces.size() > 0 and equipped_furnaces[equipped_furnaces.size() - 1] == null:
+		if equipped_furnaces.size() <= get_max_furnace_slots():
+			break
+		equipped_furnaces.pop_back()
+	if $PanelInventory.visible: _refresh_inventory()
+	if $PanelCave.visible: refresh_cave()
+
+func _on_sell_furnace_from_inventory(index: int):
+	if index >= furnace_inventory.size():
+		return
+	var furnace = furnace_inventory[index]
+	var sell_price = int(furnace['price'] * SELL_RATIO)
+	spiritual_energy += sell_price
+	furnace_inventory.remove_at(index)
+	log_message("[color=yellow]出售了【" + furnace['name'] + "】，获得" + _format_num(sell_price) + "灵气[/color]")
+	if $PanelInventory.visible: _refresh_inventory()
+
 # ==================== 洞府 ====================
 
 func refresh_cave():
 	var panel = $PanelCave
-	panel.set_state(cave_level, cave_buildings, spiritual_energy, realm_level, learned_recipes, pill_inventory)
+	panel.set_state(cave_level, cave_buildings, spiritual_energy, realm_level, learned_recipes, pill_inventory, learned_arrays, active_array, shop_arrays, furnace_inventory, equipped_furnaces)
 	panel.refresh()
 
 func recalc_cave_bonuses():
@@ -1133,6 +1543,13 @@ func recalc_cave_bonuses():
 	cave_multiplier = 1.0 + 0.1 * array_lv
 	var room_lv = cave_buildings.get('cultivation_room', {}).get('level', 0)
 	cave_base_bonus = room_lv * 1.0
+	# 阵法加成：洞府修炼速度
+	cave_multiplier += get_active_array_bonus('cave_mana_pct')
+	# 阵法加成：建筑效果
+	var building_boost = get_active_array_bonus('building_boost')
+	if building_boost > 0:
+		cave_multiplier *= 1.0 + building_boost
+		cave_base_bonus *= 1.0 + building_boost
 
 func _on_cave_upgrade():
 	var cost = 5000 * int(pow(2, cave_level))
@@ -1179,19 +1596,24 @@ func _on_building_action(bid: String):
 func _on_craft_pill_by_name(recipe_name: String):
 	for recipe in learned_recipes:
 		if recipe['name'] == recipe_name:
-			var furnace_lv = cave_buildings.get('alchemy_furnace', {}).get('level', 0)
-			var cost_mult = 1.0 - furnace_lv * 0.05
+			var bonuses = get_furnace_bonuses()
+			var cost_mult = 1.0 - bonuses['cost_reduction'] - get_active_array_bonus('craft_discount')
+			var success_chance = 0.8 + bonuses['success']
 			var actual_cost = int(recipe['craft_cost'] * cost_mult)
 
 			if spiritual_energy < actual_cost:
 				log_message("[color=red]灵气不足，无法炼制" + recipe_name + "[/color]")
 				return
 			spiritual_energy -= actual_cost
-			if pill_inventory.has(recipe_name):
-				pill_inventory[recipe_name] += 1
+
+			if randf() > success_chance:
+				log_message("[color=red]炼制失败！" + recipe_name + " 炼制失败（成功率" + str(int(success_chance * 100)) + "%），材料损耗[/color]")
 			else:
-				pill_inventory[recipe_name] = 1
-			log_message("[color=green]炼制成功：" + recipe_name + "（炼丹炉减免后消耗" + str(actual_cost) + "灵）[/color]")
+				if pill_inventory.has(recipe_name):
+					pill_inventory[recipe_name] += 1
+				else:
+					pill_inventory[recipe_name] = 1
+				log_message("[color=green]炼制成功：" + recipe_name + "（减免后消耗" + str(actual_cost) + "灵）[/color]")
 			refresh_cave()
 			if $PanelInventory.visible: _refresh_inventory()
 			return
@@ -1256,26 +1678,30 @@ func start_battle(map: Dictionary):
 	battle_log = ""
 	update_max_hp()
 	player_hp = player_max_hp
-	spawn_enemy()
+	build_ally_team()
+	spawn_enemy_team()
 	show_panel("map")
 	_refresh_map()
-	log_message("[color=yellow]进入" + map['name'] + "开始历练！[/color]")
+	log_message("[color=yellow]进入" + map['name'] + "开始历练！我方" + str(get_alive_ally_count()) + "人 vs 敌方" + str(get_alive_enemy_count()) + "人[/color]")
 
-func spawn_enemy():
-	var template = current_map['enemies'][randi() % current_map['enemies'].size()]
-	var enemy_scale = 1.0 + (realm_level - current_map['min_level']) * 0.15
-	current_enemy = {
-		'name': template['name'],
-		'hp': template['hp'] * enemy_scale,
-		'max_hp': template['hp'] * enemy_scale,
-		'atk': template['atk'] * enemy_scale,
-		'def': template['def'] * enemy_scale,
-		'exp': int(template['exp'] * enemy_scale),
-	}
+func get_alive_ally_count() -> int:
+	var count = 0
+	for a in ally_team:
+		if a.alive:
+			count += 1
+	return count
+
+func get_alive_enemy_count() -> int:
+	var count = 0
+	for e in enemy_team:
+		if e.alive:
+			count += 1
+	return count
 
 func stop_battle():
 	in_battle = false
-	current_enemy = {}
+	enemy_team.clear()
+	ally_team.clear()
 	current_map = {}
 	battle_log = ""
 	player_hp = player_max_hp
@@ -1291,17 +1717,147 @@ func _process_battle(delta: float):
 		_do_battle_tick()
 
 func _do_battle_tick():
-	var damage = max(1, int(get_player_atk() - current_enemy['def'] + randi_range(-2, 2)))
-	current_enemy['hp'] -= damage
-	battle_log = "你对" + current_enemy['name'] + "造成 " + str(damage) + " 点伤害"
-
-	if current_enemy['hp'] <= 0:
-		spiritual_energy += current_enemy['exp']
-		battle_log = "击杀了" + current_enemy['name'] + "，获得 " + str(current_enemy['exp']) + " 灵气"
-		log_message("[color=green]击杀" + current_enemy['name'] + "！获得 " + str(current_enemy['exp']) + " 灵气[/color]")
-		spawn_enemy()
+	var log_lines: Array = []
+	
+	# 我方角色攻击
+	for ally in ally_team:
+		if not ally.alive:
+			continue
+		var target = _pick_random_alive_enemy()
+		if target == null:
+			continue
+		var dmg = max(1, int(ally.atk - target.def + randi_range(-3, 3)))
+		target.hp -= dmg
+		log_lines.append("[color=#88ff88]" + ally.name + "[/color] 攻击 [color=#ff8888]" + target.name + "[/color]，造成 " + str(dmg) + " 点伤害")
+		if target.hp <= 0:
+			target.hp = 0
+			target.alive = false
+			log_lines.append("[color=yellow]◆ 击杀 " + target.name + "！获得 " + str(target.exp) + " 灵气[/color]")
+			spiritual_energy += target.exp
+			log_message("[color=green]击杀" + target.name + "！获得 " + str(target.exp) + " 灵气[/color]")
+	
+	# 检查敌方是否全灭 → 刷新敌人
+	if get_alive_enemy_count() == 0:
+		log_lines.append("[color=cyan]◇ 敌方全灭！新一波敌人出现[/color]")
+		spawn_enemy_team()
 		if $PanelMap.visible:
 			_refresh_map()
+		return
+	
+	# 敌方角色攻击
+	for enemy in enemy_team:
+		if not enemy.alive:
+			continue
+		var target = _pick_random_alive_ally()
+		if target == null:
+			continue
+		var dmg = max(1, int(enemy.atk - target.def + randi_range(-3, 3)))
+		target.hp -= dmg
+		log_lines.append("[color=#ff8888]" + enemy.name + "[/color] 攻击 [color=#88ff88]" + target.name + "[/color]，造成 " + str(dmg) + " 点伤害")
+		if target.hp <= 0:
+			target.hp = 0
+			target.alive = false
+			if target.is_player:
+				log_lines.append("[color=red]◆ " + target.name + " 阵亡！[/color]")
+			else:
+				log_lines.append("[color=red]◆ " + target.name + " 阵亡！[/color]")
+	
+	# 检查我方是否全灭
+	if get_alive_ally_count() == 0:
+		log_lines.append("[color=red]◇ 全军覆没！[/color]")
+		log_message("[color=red]全军覆没，被迫撤退...[/color]")
+		stop_battle()
+		if $PanelMap.visible:
+			show_panel("map")
+			_refresh_map()
+		return
+	
+	# 更新玩家HP（同步主角的生命值）
+	for ally in ally_team:
+		if ally.is_player:
+			player_hp = ally.hp
+			break
+	
+	if log_lines.size() > 0:
+		battle_log = "\n".join(log_lines)
+	
+	if $PanelMap.visible:
+		_refresh_map()
+
+func _pick_random_alive_enemy():
+	var alive: Array = []
+	for e in enemy_team:
+		if e.alive:
+			alive.append(e)
+	if alive.size() == 0:
+		return null
+	return alive[randi() % alive.size()]
+
+func _pick_random_alive_ally():
+	var alive: Array = []
+	for a in ally_team:
+		if a.alive:
+			alive.append(a)
+	if alive.size() == 0:
+		return null
+	return alive[randi() % alive.size()]
+
+func get_available_companions() -> Array:
+	var result: Array = []
+	for comp in COMPANION_DEFS:
+		if realm_level >= comp.unlock_realm:
+			result.append(comp)
+	return result
+
+func build_ally_team():
+	ally_team.clear()
+	var scale = 1.0 + realm_level * 0.3
+	ally_team.append({
+		'name': player_name,
+		'hp': player_max_hp,
+		'max_hp': player_max_hp,
+		'atk': get_player_atk(),
+		'def': get_player_def(),
+		'alive': true,
+		'is_player': true,
+		'color': get_realm_color(),
+	})
+	for comp in COMPANION_DEFS:
+		if realm_level >= comp.unlock_realm:
+			ally_team.append({
+				'name': comp.name,
+				'hp': comp.base_hp * scale,
+				'max_hp': comp.base_hp * scale,
+				'atk': comp.base_atk * scale,
+				'def': comp.base_def * scale,
+				'alive': true,
+				'is_player': false,
+				'color': comp.color,
+			})
+
+func spawn_enemy_team():
+	enemy_team.clear()
+	var enemy_scale = 1.0 + (realm_level - current_map['min_level']) * 0.15
+	var templates = current_map['enemies']
+	var count = min(templates.size(), 6)
+	var used_indices: Array = []
+	for _i in range(count):
+		var idx: int
+		while true:
+			idx = randi() % templates.size()
+			if not used_indices.has(idx):
+				used_indices.append(idx)
+				break
+		var template = templates[idx]
+		enemy_team.append({
+			'name': template['name'],
+			'hp': template['hp'] * enemy_scale,
+			'max_hp': template['hp'] * enemy_scale,
+			'atk': template['atk'] * enemy_scale,
+			'def': template['def'] * enemy_scale,
+			'exp': int(template['exp'] * enemy_scale),
+			'alive': true,
+		})
 
 # ==================== 天赋 ====================
 
@@ -1339,7 +1895,7 @@ func _on_reincarnate_clicked():
 	$ReincarnateConfirm.popup_centered()
 
 func _on_reincarnate_confirmed():
-	var gained = 1 + floor(realm_level / 3.0)
+	var gained = 1 + floor(realm_level / 9.0)
 	enlightenment_points += gained
 	reincarnation_count += 1
 
@@ -1353,6 +1909,10 @@ func _on_reincarnate_confirmed():
 	comprehension_progress = 0.0
 	comprehension_time_total = 0.0
 	learned_recipes = []
+	learned_arrays = []
+	active_array = ""
+	array_inventory = []
+	recipe_inventory = []
 	pill_inventory = {}
 	equipped_items = {
 		'weapon': null,
@@ -1361,6 +1921,8 @@ func _on_reincarnate_confirmed():
 		'artifact': null
 	}
 	equipment_inventory = []
+	furnace_inventory = []
+	equipped_furnaces = []
 	player_hp = 100.0
 	player_max_hp = 100.0
 

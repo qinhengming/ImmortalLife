@@ -37,11 +37,67 @@ theme_override_font_sizes/font_size = 16
 [node name="Separator" type="HSeparator" parent="VBox"]
 layout_mode = 2
 
-[node name="ScrollList" type="ScrollContainer" parent="VBox"]
+[node name="MapArea" type="VBoxContainer" parent="VBox"]
+visible = true
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 3.0
 
-[node name="ItemList" type="VBoxContainer" parent="VBox/ScrollList"]
+[node name="ScrollList" type="ScrollContainer" parent="VBox/MapArea"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ItemList" type="VBoxContainer" parent="VBox/MapArea/ScrollList"]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="BattleArea" type="VBoxContainer" parent="VBox"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 3.0
+theme_override_constants/separation = 4
+
+[node name="EnemyLabel" type="Label" parent="VBox/BattleArea"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "── 敌方阵营 ──"
+theme_override_colors/font_color = Color(1, 0.4, 0.3, 1)
+theme_override_font_sizes/font_size = 13
+
+[node name="EnemyGrid" type="GridContainer" parent="VBox/BattleArea"]
+layout_mode = 2
+columns = 3
+theme_override_constants/h_separation = 3
+theme_override_constants/v_separation = 3
+
+[node name="SepEnemy" type="HSeparator" parent="VBox/BattleArea"]
+layout_mode = 2
+
+[node name="AllyLabel" type="Label" parent="VBox/BattleArea"]
+layout_mode = 2
+horizontal_alignment = 1
+text = "── 我方阵营 ──"
+theme_override_colors/font_color = Color(0.4, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 13
+
+[node name="AllyGrid" type="GridContainer" parent="VBox/BattleArea"]
+layout_mode = 2
+columns = 3
+theme_override_constants/h_separation = 3
+theme_override_constants/v_separation = 3
+
+[node name="SepAlly" type="HSeparator" parent="VBox/BattleArea"]
+layout_mode = 2
+
+[node name="BattleLogLabel" type="RichTextLabel" parent="VBox/BattleArea"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 60)
+bbcode_enabled = true
+text = ""
+scroll_following = true
+theme_override_font_sizes/normal_font_size = 10
+
+[node name="StopBtn" type="Button" parent="VBox/BattleArea"]
+layout_mode = 2
+text = "停止历练"

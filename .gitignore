@@ -2,5 +2,9 @@
 .godot/
 /android/
 
+# Build and addons
+build/
+addons/
+
 # Claude Code config
 .claude/

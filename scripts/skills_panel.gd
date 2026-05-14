@@ -51,7 +51,7 @@ const TECHNIQUE_DEFS = {
 	},
 	"burning_heaven": {
 		"name": "焚天决", "grade": 4, "desc": "火属性至强功法，焚尽八荒",
-		"price": 3000, "min_realm": 4,
+		"price": 3000, "min_realm": 10,
 		"color": Color(1.0, 0.45, 0.2),
 		"levels": [
 			{"time": 70, "mana_pct": 0.25, "atk": 3, "def": 0, "hp": 0, "effect": ""},
@@ -67,7 +67,7 @@ const TECHNIQUE_DEFS = {
 	},
 	"ice_heart": {
 		"name": "冰心诀", "grade": 4, "desc": "冰属性功法，心如寒冰",
-		"price": 10000, "min_realm": 7,
+		"price": 10000, "min_realm": 19,
 		"color": Color(0.30, 0.85, 1.0),
 		"levels": [
 			{"time": 80, "mana_pct": 0.30, "atk": 0, "def": 3, "hp": 0, "effect": ""},
@@ -83,7 +83,7 @@ const TECHNIQUE_DEFS = {
 	},
 	"celestial_art": {
 		"name": "天罡功", "grade": 5, "desc": "圣级功法，雷属性至强",
-		"price": 50000, "min_realm": 10,
+		"price": 50000, "min_realm": 28,
 		"color": Color(0.75, 0.30, 0.95),
 		"levels": [
 			{"time": 100, "mana_pct": 0.40, "atk": 8, "def": 3, "hp": 10, "effect": ""},

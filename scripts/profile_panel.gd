@@ -16,6 +16,7 @@ var _enlightenment_points: int = 0
 var _realms: Array = []
 var _base_mana: float = 10.0
 var _cave_base_bonus: float = 0.0
+var _realm_mana_bonus: float = 0.0
 var _realm_multiplier: float = 1.0
 var _technique_multiplier: float = 1.0
 var _cave_multiplier: float = 1.0
@@ -44,6 +45,7 @@ func set_state(data: Dictionary):
 	_realms = data.get('realms', [])
 	_base_mana = data.get('base_mana', 10.0)
 	_cave_base_bonus = data.get('cave_base_bonus', 0.0)
+	_realm_mana_bonus = data.get('realm_mana_bonus', 0.0)
 	_realm_multiplier = data.get('realm_multiplier', 1.0)
 	_technique_multiplier = data.get('technique_multiplier', 1.0)
 	_cave_multiplier = data.get('cave_multiplier', 1.0)
@@ -80,25 +82,22 @@ func _pl(text: String, color: Color = Color(0.9, 0.9, 1.0), font_size: int = 13)
 	return label
 
 func _format_num(n: float) -> String:
-	var s = str(int(n))
-	var result = ""
-	for i in range(s.length()):
-		if i > 0 and (s.length() - i) % 3 == 0:
-			result += ","
-		result += s[i]
-	return result
+	if n < 10000:
+		return str(int(n))
+	var val = n
+	var unit_idx = 0
+	var units = ['', '万', '亿', '兆', '京', '垓', '秭', '穰', '沟', '涧', '正', '载', '极']
+	while val >= 10000 and unit_idx < units.size() - 1:
+		val /= 10000.0
+		unit_idx += 1
+	return str(val).pad_decimals(1) + units[unit_idx]
 
 func get_realm_title() -> String:
-	match _realm_level:
-		1, 2, 3: return "练气修士"
-		4, 5, 6: return "筑基真人"
-		7, 8, 9: return "金丹真君"
-		10, 11, 12: return "元婴大能"
-		13, 14, 15: return "化神圣者"
-		16, 17, 18: return "合体至尊"
-		19, 20, 21: return "大乘仙尊"
-		22: return "渡劫天尊"
-		_: return "散修"
+	var mr = floor((_realm_level - 1) / 9)
+	var titles = ['练气修士', '筑基真人', '金丹真君', '元婴大能', '化神尊者', '合体圣者', '大乘仙尊', '渡劫准仙', '真仙', '金仙', '太乙金仙', '大罗金仙', '混元道祖']
+	if mr >= 0 and mr < titles.size():
+		return titles[mr]
+	return "未知"
 
 func get_realm_color() -> Color:
 	if _realm_level >= 1 and _realm_level <= _realms.size():
@@ -106,16 +105,8 @@ func get_realm_color() -> Color:
 	return Color(0.6, 0.6, 0.8)
 
 func get_title_color() -> Color:
-	match _realm_level:
-		1, 2, 3: return Color(0.20, 0.85, 0.55)
-		4, 5, 6: return Color(0.20, 0.55, 1.00)
-		7, 8, 9: return Color(0.85, 0.60, 0.20)
-		10, 11, 12: return Color(1.00, 0.30, 0.70)
-		13, 14, 15: return Color(1.00, 0.85, 0.00)
-		16, 17, 18: return Color(0.85, 0.30, 0.10)
-		19, 20, 21: return Color(0.30, 1.00, 0.80)
-		22: return Color(1.00, 0.60, 0.10)
-		_: return Color(0.6, 0.6, 0.8)
+	var mr = floor((_realm_level - 1) / 9)
+	return get_realm_color()
 
 func refresh():
 	var list = $VBox/ScrollList/ItemList
@@ -199,8 +190,9 @@ func refresh():
 
 	var zones = [
 		{"name": "基础灵气", "value": _base_mana, "is_flat": true},
+		{"name": "境界灵气", "value": _realm_mana_bonus, "is_flat": true},
 		{"name": "洞府加成", "value": _cave_base_bonus, "is_flat": true},
-		{"name": "境界加成", "value": _realm_multiplier, "is_flat": false},
+		{"name": "境界倍率", "value": _realm_multiplier, "is_flat": false},
 		{"name": "功法倍率", "value": _technique_multiplier, "is_flat": false},
 		{"name": "洞府效率", "value": _cave_multiplier, "is_flat": false},
 		{"name": "法宝加成", "value": _artifact_multiplier, "is_flat": false},
