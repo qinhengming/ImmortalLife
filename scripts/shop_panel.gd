@@ -6,6 +6,7 @@ signal buy_recipe_requested(recipe: Dictionary)
 signal buy_equipment_requested(item: Dictionary)
 signal buy_array_requested(array_data: Dictionary)
 signal buy_furnace_requested(furnace: Dictionary)
+signal buy_test_item_requested(item: Dictionary)
 
 var _spiritual_energy: float = 0.0
 var _realm_level: int = 1
@@ -14,6 +15,7 @@ var _shop_recipes: Array = []
 var _shop_equipment: Array = []
 var _shop_arrays: Array = []
 var _shop_furnaces: Array = []
+var _shop_test_items: Array = []
 var _learned_techniques: Dictionary = {}
 var _learned_recipes: Array = []
 var _recipe_inventory: Array = []
@@ -55,6 +57,7 @@ func set_state(data: Dictionary):
 	_shop_equipment = data.get('shop_equipment', [])
 	_shop_arrays = data.get('shop_arrays', [])
 	_shop_furnaces = data.get('shop_furnaces', [])
+	_shop_test_items = data.get('shop_test_items', [])
 	_learned_techniques = data.get('learned_techniques', {})
 	_learned_recipes = data.get('learned_recipes', [])
 	_recipe_inventory = data.get('recipe_inventory', [])
@@ -83,6 +86,14 @@ func _ready():
 	btn_misc.add_theme_font_size_override("font_size", 12)
 	btn_misc.pressed.connect(func(): _set_category("misc"))
 	$VBox/HBox/LeftMenu.add_child(btn_misc)
+
+	var btn_test = Button.new()
+	btn_test.name = "BtnTest"
+	btn_test.text = "测试"
+	btn_test.toggle_mode = true
+	btn_test.add_theme_font_size_override("font_size", 12)
+	btn_test.pressed.connect(func(): _set_category("test"))
+	$VBox/HBox/LeftMenu.add_child(btn_test)
 
 
 const BIG_UNITS = ['', '万', '亿', '兆', '京', '垓', '秭', '穰', '沟', '涧', '正', '载', '极']
@@ -180,6 +191,8 @@ func _set_category(cat: String):
 			menu.get_node("BtnArrays").button_pressed = true
 		"misc":
 			menu.get_node("BtnMisc").button_pressed = true
+		"test":
+			menu.get_node("BtnTest").button_pressed = true
 	refresh()
 
 func refresh():
@@ -240,6 +253,17 @@ func refresh():
 
 		for furnace in _shop_furnaces:
 			list.add_child(_make_furnace_card(furnace))
+
+	# 测试区
+	if _current_cat == "all" or _current_cat == "test":
+		var tt = _pl("── 测试道具 ──", Color(0.9, 0.4, 0.9), 13)
+		tt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		tt.add_theme_constant_override("margin_top", 8)
+		tt.add_theme_constant_override("margin_bottom", 4)
+		list.add_child(tt)
+
+		for item in _shop_test_items:
+			list.add_child(_make_test_card(item))
 
 	# 阵法区
 	if _current_cat == "all" or _current_cat == "arrays":
@@ -607,6 +631,74 @@ func _make_array_card(data: Dictionary) -> PanelContainer:
 			btn.text = "购买"
 			var d = data
 			btn.pressed.connect(func(): buy_array_requested.emit(d))
+	hbox.add_child(btn)
+
+	return card
+
+
+func _make_test_card(data: Dictionary) -> PanelContainer:
+	var affordable = _spiritual_energy >= data['price']
+
+	var card = PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _make_card_bg(false, affordable))
+
+	var hbox = HBoxContainer.new()
+	hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_theme_constant_override("separation", 6)
+	card.add_child(hbox)
+
+	var info_vbox = VBoxContainer.new()
+	info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_vbox.add_theme_constant_override("separation", 2)
+	hbox.add_child(info_vbox)
+
+	var name_label = Label.new()
+	name_label.text = data['name']
+	name_label.add_theme_font_size_override("font_size", 13)
+	name_label.add_theme_color_override("font_color", Color(0.9, 0.5, 1.0))
+	info_vbox.add_child(name_label)
+
+	var desc_label = Label.new()
+	var effect = data.get('effect_type', '')
+	var effect_desc = ""
+	if effect == 'realm_up':
+		effect_desc = "提升一阶境界"
+	elif effect == 'realm_down':
+		effect_desc = "降低一阶境界"
+	elif effect == 'buy_material':
+		effect_desc = "获得" + data.get('material', '') + " x" + str(data.get('amount', 1))
+	desc_label.text = data['desc'] + " | 效果：" + effect_desc
+	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	desc_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.7))
+	desc_label.add_theme_font_size_override("font_size", 11)
+	info_vbox.add_child(desc_label)
+
+	var price_box = HBoxContainer.new()
+	hbox.add_child(price_box)
+
+	var price_label = Label.new()
+	price_label.text = _format_num(data['price'])
+	price_label.add_theme_font_size_override("font_size", 13)
+	if affordable:
+		price_label.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
+	else:
+		price_label.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35))
+	price_box.add_child(price_label)
+
+	var unit = Label.new()
+	unit.text = "灵"
+	unit.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+	unit.add_theme_font_size_override("font_size", 11)
+	unit.add_theme_constant_override("margin_right", 4)
+	price_box.add_child(unit)
+
+	var btn = Button.new()
+	btn.custom_minimum_size = Vector2(52, 28)
+	btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	btn.add_theme_font_size_override("font_size", 11)
+	btn.text = "购买"
+	var d = data
+	btn.pressed.connect(func(): buy_test_item_requested.emit(d))
 	hbox.add_child(btn)
 
 	return card

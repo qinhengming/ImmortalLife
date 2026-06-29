@@ -147,6 +147,13 @@ size_flags_vertical = 3
 theme_override_font_sizes/font_size = 14
 text = "天赋"
 
+[node name="BtnDharma" type="Button" parent="MenuBar" unique_id=1800000002]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_font_sizes/font_size = 14
+text = "法相"
+
 [node name="BtnEquipment" type="Button" parent="MenuBar" unique_id=261735353]
 layout_mode = 2
 size_flags_horizontal = 3

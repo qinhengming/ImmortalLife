@@ -19,16 +19,21 @@ var _cave_base_bonus: float = 0.0
 var _realm_mana_bonus: float = 0.0
 var _realm_multiplier: float = 1.0
 var _technique_multiplier: float = 1.0
+var _spirit_root_multiplier: float = 1.0
 var _cave_multiplier: float = 1.0
 var _artifact_multiplier: float = 1.0
 var _time_coefficient: float = 1.0
 var _pill_flat_bonus: float = 0.0
+var _talent_mana_bonus: float = 0.0
+var _talent_multiplier: float = 1.0
 var _player_hp: float = 100.0
 var _player_max_hp: float = 100.0
 var _reincarnation_clickable: bool = false
 var _player_atk: float = 10.0
 var _player_def: float = 5.0
 var _spirit_roots_list: Array = []
+var _attrs: Dictionary = {}
+var _attr_defs: Dictionary = {}
 
 func set_state(data: Dictionary):
 	_player_name = data.get('player_name', "")
@@ -48,16 +53,21 @@ func set_state(data: Dictionary):
 	_realm_mana_bonus = data.get('realm_mana_bonus', 0.0)
 	_realm_multiplier = data.get('realm_multiplier', 1.0)
 	_technique_multiplier = data.get('technique_multiplier', 1.0)
+	_spirit_root_multiplier = data.get('spirit_root_multiplier', 1.0)
 	_cave_multiplier = data.get('cave_multiplier', 1.0)
 	_artifact_multiplier = data.get('artifact_multiplier', 1.0)
 	_time_coefficient = data.get('time_coefficient', 1.0)
 	_pill_flat_bonus = data.get('pill_flat_bonus', 0.0)
+	_talent_mana_bonus = data.get('talent_mana_bonus', 0.0)
+	_talent_multiplier = data.get('talent_multiplier', 1.0)
 	_player_hp = data.get('player_hp', 100.0)
 	_player_max_hp = data.get('player_max_hp', 100.0)
 	_reincarnation_clickable = data.get('reincarnation_clickable', false)
 	_player_atk = data.get('player_atk', 10.0)
 	_player_def = data.get('player_def', 5.0)
 	_spirit_roots_list = data.get('spirit_roots_list', [])
+	_attrs = data.get('attrs', {})
+	_attr_defs = data.get('attr_defs', {})
 
 func _make_card(bg: Color) -> PanelContainer:
 	var card = PanelContainer.new()
@@ -192,8 +202,11 @@ func refresh():
 		{"name": "基础灵气", "value": _base_mana, "is_flat": true},
 		{"name": "境界灵气", "value": _realm_mana_bonus, "is_flat": true},
 		{"name": "洞府加成", "value": _cave_base_bonus, "is_flat": true},
+		{"name": "天赋灵气", "value": _talent_mana_bonus, "is_flat": true},
 		{"name": "境界倍率", "value": _realm_multiplier, "is_flat": false},
+		{"name": "灵根倍率", "value": _spirit_root_multiplier, "is_flat": false},
 		{"name": "功法倍率", "value": _technique_multiplier, "is_flat": false},
+		{"name": "天赋倍率", "value": _talent_multiplier, "is_flat": false},
 		{"name": "洞府效率", "value": _cave_multiplier, "is_flat": false},
 		{"name": "法宝加成", "value": _artifact_multiplier, "is_flat": false},
 		{"name": "时间系数", "value": _time_coefficient, "is_flat": false},
@@ -249,6 +262,29 @@ func refresh():
 	av.add_child(attr_row2)
 
 	list.add_child(ac)
+	list.add_child(HSeparator.new())
+
+	# === 本源属性卡 ===
+	var bc = _make_card(Color(0.14, 0.14, 0.20))
+	var bv = VBoxContainer.new()
+	bv.add_theme_constant_override("separation", 4)
+	bc.add_child(bv)
+	bv.add_child(_pl("本源属性", Color(1, 0.84, 0), 14))
+	var attr_keys = ['physique', 'bone', 'strength', 'spirit', 'comprehension', 'fortune', 'agility', 'critical']
+	for i in range(0, attr_keys.size(), 2):
+		var row = HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		for j in range(2):
+			if i + j >= attr_keys.size():
+				break
+			var key = attr_keys[i + j]
+			var defs = _attr_defs.get(key, {})
+			var val = _attrs.get(key, 0)
+			var color = defs.get('color', Color(0.5, 0.5, 0.5))
+			var name = defs.get('name', key)
+			row.add_child(_pl(name + "：" + str(val), color, 12))
+		bv.add_child(row)
+	list.add_child(bc)
 	list.add_child(HSeparator.new())
 
 	# === 修行统计卡 ===

@@ -259,12 +259,24 @@ func _render_equipment(list: VBoxContainer):
 		match item.get("slot", ""):
 			"weapon":
 				slot_color = Color(1, 0.6, 0.4)
+			"helmet":
+				slot_color = Color(0.7, 0.73, 0.85)
 			"armor":
 				slot_color = Color(0.4, 0.8, 1)
-			"accessory":
-				slot_color = Color(0.9, 0.7, 1)
+			"boots":
+				slot_color = Color(0.5, 1, 0.5)
 			"artifact":
 				slot_color = Color(1, 0.84, 0)
+			"accessory":
+				slot_color = Color(0.9, 0.7, 1)
+			"belt":
+				slot_color = Color(1, 0.85, 0.65)
+			"ring_left":
+				slot_color = Color(0.3, 1, 0.85)
+			"ring_right":
+				slot_color = Color(0.3, 1, 0.85)
+			"cloak":
+				slot_color = Color(0.75, 0.6, 0.9)
 		info.add_theme_color_override("font_color", slot_color)
 		row.add_child(info)
 
