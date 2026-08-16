@@ -656,6 +656,8 @@ func _make_test_card(data: Dictionary) -> PanelContainer:
 		effect_desc = "降低一阶境界"
 	elif effect == 'buy_material':
 		effect_desc = "获得" + data.get('material', '') + " x" + str(data.get('amount', 1))
+	elif effect == 'cave_upgrade_limit':
+		effect_desc = "洞府升级上限+" + str(data.get('effect_value', 1))
 	desc_label.text = data['desc'] + " | 效果：" + effect_desc
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.7))

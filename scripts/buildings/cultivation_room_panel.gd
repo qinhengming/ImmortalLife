@@ -6,13 +6,17 @@ const BID = "cultivation_room"
 
 var _building: Dictionary = {}
 var _energy: float = 0.0
+var _ore: float = 0.0
+var _wood: float = 0.0
 
 signal back_requested()
 signal building_action_requested(bid: String)
 
-func set_state(building: Dictionary, energy: float):
+func set_state(building: Dictionary, energy: float, ore: float = 0.0, wood: float = 0.0):
 	_building = building.duplicate()
 	_energy = energy
+	_ore = ore
+	_wood = wood
 
 func _card_bg(color: Color = Color(0.1, 0.12, 0.18)) -> StyleBoxFlat:
 	return UI.card_bg(color, 6)
@@ -30,7 +34,6 @@ func refresh():
 		c.queue_free()
 
 	var level = _building.get('level', 0)
-	var max_lv = 10
 
 	# 建筑信息卡
 	var info = PanelContainer.new()
@@ -39,19 +42,22 @@ func refresh():
 	iv.add_theme_constant_override("separation", 6)
 	info.add_child(iv)
 
-	iv.add_child(_lbl("修炼室  Lv." + str(level) + "/" + str(max_lv), Color(0.3, 1.0, 0.5), 18))
+	iv.add_child(_lbl("修炼室  Lv." + str(level) + "（无上限）", Color(0.3, 1.0, 0.5), 18))
 	iv.add_child(_lbl("加速修炼速度", Color(0.7, 0.7, 0.8), 12))
 	iv.add_child(_lbl("效果：每级基础修炼速度+1灵/秒", Color(0.4, 0.9, 0.5), 12))
 	iv.add_child(_lbl("当前加成：基础修炼速度 +" + str(level) + " 灵/秒", Color(0.9, 0.75, 0.3), 13))
 
-	if level >= max_lv:
-		iv.add_child(_lbl("已升至满级", Color(0.4, 0.8, 0.4), 13))
+	if _building.get('upgrading', false):
+		if _building.get('queued', false):
+			iv.add_child(_lbl("排队中…", Color(0.5, 0.55, 0.7), 13))
+		else:
+			iv.add_child(_lbl("升级中…", Color(0.8, 0.6, 0.3), 13))
 	else:
 		var cost = int(800 * pow(1.5, level))
-		var can = _energy >= cost
+		var can = _ore >= cost and _wood >= cost
 		var row = HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
-		row.add_child(_lbl("升级消耗：" + _fmt(cost) + " 灵气", Color(0.7, 0.7, 0.8), 12))
+		row.add_child(_lbl("升级消耗：" + _fmt(cost) + " 灵矿 + " + _fmt(cost) + " 灵木", Color(0.7, 0.7, 0.8), 12))
 		var btn = Button.new()
 		btn.text = "升级"
 		btn.add_theme_font_size_override("font_size", 12)
@@ -67,9 +73,8 @@ func refresh():
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	list.add_child(desc)
 
-	if level < max_lv:
-		var next = _lbl("下一级效果：基础修炼速度 +" + str(level + 1) + " 灵/秒", Color(0.5, 1.0, 0.7), 12)
-		list.add_child(next)
+	var next = _lbl("下一级效果：基础修炼速度 +" + str(level + 1) + " 灵/秒", Color(0.5, 1.0, 0.7), 12)
+	list.add_child(next)
 
 func _ready():
 	$VBox/TopBar/BtnBack.pressed.connect(func(): back_requested.emit())

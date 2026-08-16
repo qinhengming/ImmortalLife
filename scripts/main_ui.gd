@@ -41,6 +41,10 @@ var pill_flat_bonus: float = 0.0
 var cave_level: int = 1
 var cave_buildings: Dictionary = {}
 var cave_base_bonus: float = 0.0
+var cave_upgrade_limit: int = 1
+var cave_upgrade_queue: Array = []
+var spirit_ore: float = 0.0
+var spirit_wood: float = 0.0
 
 # 宗门系统
 var sect_level: int = 1
@@ -218,6 +222,7 @@ var shop_test_items = [
 	{'name': '灵木', 'desc': '宗门建材：蕴含灵气的木材', 'price': 200, 'effect_type': 'buy_material', 'material': '灵木', 'amount': 5},
 	{'name': '玄铁', 'desc': '宗门建材：漆黑如墨的矿石', 'price': 1000, 'effect_type': 'buy_material', 'material': '玄铁', 'amount': 3},
 	{'name': '魂晶', 'desc': '宗门建材：凝结灵魂精华的晶体', 'price': 5000, 'effect_type': 'buy_material', 'material': '魂晶', 'amount': 1},
+	{'name': '升级令', 'desc': '洞府同时升级建筑上限+1（可重复购买）', 'price': 500, 'effect_type': 'cave_upgrade_limit', 'effect_value': 1},
 ]
 
 const SAVE_PATH = "user://save.json"
@@ -1011,11 +1016,13 @@ func _ready():
 	update_max_hp()
 	log_message("[color=green]游戏启动，欢迎回来！[/color]")
 	calc_offline_earnings()
-	# 初始化洞府建筑
-	if cave_buildings.is_empty():
-		for bid in $PanelCave.BUILDING_DEFS:
-			var init_unlocked = $PanelCave.BUILDING_DEFS[bid].init_unlocked
-			cave_buildings[bid] = {'level': 0, 'unlocked': init_unlocked}
+	# 初始化洞府建筑（补齐旧存档缺失的建筑）
+	for bid in $PanelCave.BUILDING_DEFS:
+		if cave_buildings.has(bid):
+			continue
+		var defs = $PanelCave.BUILDING_DEFS[bid]
+		cave_buildings[bid] = {'level': defs.get('init_level', 0), 'unlocked': defs.init_unlocked}
+	_reconcile_cave_queue()
 	recalc_cave_bonuses()
 	recalc_mana_per_sec()
 	# 初始化天赋
@@ -1055,6 +1062,7 @@ func _ready():
 	$PanelShop.buy_test_item_requested.connect(_on_buy_test_item)
 	$PanelCave.upgrade_cave_requested.connect(_on_cave_upgrade)
 	$PanelCave.building_action_requested.connect(_on_building_action)
+	$PanelCave.cancel_upgrade_requested.connect(_on_cancel_upgrade)
 	$PanelCave.craft_pill_requested.connect(_on_craft_pill_by_name)
 	$PanelCave.use_pill_requested.connect(_on_use_pill)
 	$PanelCave.back_requested.connect(_on_back)
@@ -1150,15 +1158,9 @@ func _ready():
 	# 动态添加宗门按钮
 	var btn_sect = Button.new()
 	btn_sect.name = "BtnSect"
-	if realm_level < 37:
-		btn_sect.icon = load("res://assets/feng.png")
-		btn_sect.expand_icon = true
-		btn_sect.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		btn_sect.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
-		btn_sect.text = "宗门"
-	else:
-		btn_sect.text = "宗门"
+	btn_sect.text = "宗门"
 	btn_sect.add_theme_font_size_override("font_size", 12)
+	_apply_sect_lock(btn_sect, realm_level < 37)
 	btn_sect.pressed.connect(_on_btn_sect)
 	$MenuBar.add_child(btn_sect)
 	show_panel("")
@@ -1171,8 +1173,10 @@ func _notification(what):
 
 func save_game():
 	var data = {
-		'save_version': 6,
+		'save_version': 7,
 		'spiritual_energy': spiritual_energy,
+		'spirit_ore': spirit_ore,
+		'spirit_wood': spirit_wood,
 		'mana_per_sec': mana_per_sec,
 		'base_mana': base_mana,
 		'realm_multiplier': realm_multiplier,
@@ -1205,6 +1209,8 @@ func save_game():
 		'player_hp': player_hp,
 		'cave_level': cave_level,
 		'cave_buildings': cave_buildings,
+		'cave_upgrade_limit': cave_upgrade_limit,
+		'cave_upgrade_queue': cave_upgrade_queue,
 		'sect_level': sect_level,
 		'sect_buildings': sect_buildings,
 		'sect_materials': sect_materials,
@@ -1238,6 +1244,8 @@ func load_save():
 	if typeof(data) != TYPE_DICTIONARY:
 		return
 	spiritual_energy = data.get('spiritual_energy', 0.0)
+	spirit_ore = data.get('spirit_ore', 0.0)
+	spirit_wood = data.get('spirit_wood', 0.0)
 	mana_per_sec = data.get('mana_per_sec', 10.0)
 	base_mana = data.get('base_mana', 10.0)
 	realm_multiplier = data.get('realm_multiplier', 1.0)
@@ -1249,6 +1257,8 @@ func load_save():
 	pill_flat_bonus = data.get('pill_flat_bonus', 0.0)
 	cave_level = data.get('cave_level', 1)
 	cave_buildings = data.get('cave_buildings', {})
+	cave_upgrade_limit = data.get('cave_upgrade_limit', 1)
+	cave_upgrade_queue = data.get('cave_upgrade_queue', [])
 	sect_level = data.get('sect_level', 1)
 	sect_buildings = data.get('sect_buildings', {})
 	sect_materials = data.get('sect_materials', {})
@@ -1333,6 +1343,21 @@ func calc_offline_earnings():
 	if elapsed > 0:
 		offline_earnings = mana_per_sec * elapsed
 		spiritual_energy += offline_earnings
+		spirit_ore += get_ore_rate() * elapsed
+		spirit_wood += get_wood_rate() * elapsed
+		# 离线期间推进正在进行的建筑升级
+		for bid in cave_buildings.keys():
+			var b = cave_buildings[bid]
+			if not b.get('upgrading', false):
+				continue
+			var remaining = b.get('upgrade_remaining', 0.0) - elapsed
+			while remaining <= 0.0:
+				b['level'] = b.get('level', 0) + 1
+				var nd = _get_upgrade_duration(bid, b['level'])
+				b['upgrade_duration'] = nd
+				remaining += nd
+			b['upgrade_remaining'] = remaining
+		_promote_cave_queue()
 		log_message("[color=cyan]离线收益：" + str(int(offline_earnings)) + " 灵气（离线 " + str(int(elapsed)) + " 秒）[/color]")
 		while try_breakthrough():
 			pass
@@ -1359,9 +1384,32 @@ func _process(delta: float):
 		save_game()
 	_process_battle(delta)
 	_process_toast(delta)
+	_process_cave_buildings(delta)
+	spirit_ore += get_ore_rate() * delta
+	spirit_wood += get_wood_rate() * delta
+	if $PanelCave.visible:
+		$PanelCave.tick_upgrade_bars(spirit_ore, spirit_wood, get_ore_rate(), get_wood_rate())
 	if tooltip_node and tooltip_node.visible:
 		var mp = get_global_mouse_position()
 		tooltip_node.position = Vector2(mp.x + 12, mp.y + 12)
+
+## 洞府建筑升级计时：到期后提升等级
+func _process_cave_buildings(delta: float):
+	var upgraded := false
+	for bid in cave_buildings.keys():
+		var b = cave_buildings[bid]
+		if not b.get('upgrading', false):
+			continue
+		b['upgrade_remaining'] = b.get('upgrade_remaining', 0.0) - delta
+		if b['upgrade_remaining'] <= 0.0:
+			b['upgrading'] = false
+			b['level'] = b.get('level', 0) + 1
+			var defs = $PanelCave.BUILDING_DEFS.get(bid, {})
+			log_message("[color=cyan]" + defs.get('name', bid) + " 升至 " + str(b['level']) + " 级[/color]")
+			upgraded = true
+	if upgraded:
+		recalc_cave_bonuses()
+	_promote_cave_queue()
 
 func try_breakthrough() -> bool:
 	if realm_level >= realms.size():
@@ -1530,16 +1578,26 @@ func update_ui():
 	$Label5.text = "HP：" + _format_big(player_hp) + "/" + _format_big(player_max_hp)
 	var btn_sect = $MenuBar.get_node_or_null("BtnSect")
 	if btn_sect:
-		if realm_level < 37:
-			btn_sect.icon = load("res://assets/feng.png")
-			btn_sect.expand_icon = true
-			btn_sect.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			btn_sect.vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
-			btn_sect.text = "宗门"
-		else:
-			btn_sect.icon = null
-			btn_sect.expand_icon = false
-			btn_sect.text = "宗门"
+		_apply_sect_lock(btn_sect, realm_level < 37)
+
+## 宗门按钮锁定态：右上角挂「禁」角标（红圈粗体禁），代替原 lock 图片
+func _apply_sect_lock(btn: Button, locked: bool):
+	var badge: Control = btn.get_node_or_null("ForbidBadge")
+	if locked and badge == null:
+		badge = UI.forbid_badge(16)
+		badge.name = "ForbidBadge"
+		badge.anchor_left = 1.0
+		badge.anchor_right = 1.0
+		badge.anchor_top = 0.0
+		badge.anchor_bottom = 0.0
+		badge.offset_left = -20.0
+		badge.offset_right = -4.0
+		badge.offset_top = 3.0
+		badge.offset_bottom = 19.0
+		btn.add_child(badge)
+	elif not locked and badge != null:
+		btn.remove_child(badge)
+		badge.queue_free()
 
 func get_realm_color() -> Color:
 	if realm_level >= 1 and realm_level <= realms.size():
@@ -1981,6 +2039,10 @@ func _on_buy_test_item(item: Dictionary):
 		sect_materials[mat] = sect_materials.get(mat, 0) + amt
 		log_message("[color=#88ff88]◆ 购买" + item_name + " x" + str(amt) + "，当前" + mat + "：" + str(sect_materials[mat]) + "[/color]")
 		_show_toast("获得" + mat + " x" + str(amt))
+	elif effect == 'cave_upgrade_limit':
+		cave_upgrade_limit += item.get('effect_value', 1)
+		log_message("[color=#00ff88]◆ 购买" + item_name + "，洞府升级上限提升至 " + str(cave_upgrade_limit) + "[/color]")
+		_show_toast("升级上限 +1")
 	if $PanelShop.visible: _refresh_shop()
 	if $PanelProfile.visible: _refresh_profile()
 
@@ -2189,7 +2251,7 @@ func _on_sell_furnace_from_inventory(index: int):
 
 func refresh_cave():
 	var panel = $PanelCave
-	panel.set_state(cave_level, cave_buildings, spiritual_energy, realm_level, learned_recipes, pill_inventory, learned_arrays, active_array, shop_arrays, furnace_inventory, equipped_furnaces)
+	panel.set_state(cave_level, cave_buildings, spiritual_energy, realm_level, learned_recipes, pill_inventory, learned_arrays, active_array, shop_arrays, furnace_inventory, equipped_furnaces, spirit_ore, spirit_wood, get_ore_rate(), get_wood_rate(), cave_upgrade_queue, cave_upgrade_limit)
 	panel.refresh()
 
 func refresh_sect():
@@ -2383,6 +2445,21 @@ func _try_drop_sect_material():
 		amount = 1
 	sect_materials[mat_name] = sect_materials.get(mat_name, 0) + amount
 
+func get_ore_rate() -> float:
+	return cave_buildings.get('spirit_mine', {}).get('level', 0) * 1.0
+
+func get_wood_rate() -> float:
+	return cave_buildings.get('spirit_wood', {}).get('level', 0) * 1.0
+
+## 建筑升级耗时（秒），随等级增长
+func _get_upgrade_duration(bid: String, level: int) -> float:
+	var defs = $PanelCave.BUILDING_DEFS.get(bid, {})
+	return int(defs.get('base_time', 10.0) * pow(defs.get('time_growth', 1.2), level))
+
+## 建筑升级货币：'energy'(灵气) / 'ore'(灵矿) / 'wood'(灵木) / 'both'(灵矿+灵木)
+func _get_building_currency(bid: String) -> String:
+	return $PanelCave.get_upgrade_currency(bid)
+
 func recalc_cave_bonuses():
 	var array_lv = cave_buildings.get('spirit_array', {}).get('level', 0)
 	cave_multiplier = 1.0 + 0.1 * array_lv
@@ -2397,11 +2474,13 @@ func recalc_cave_bonuses():
 		cave_base_bonus *= 1.0 + building_boost
 
 func _on_cave_upgrade():
-	var cost = 5000 * int(pow(2, cave_level))
-	if spiritual_energy < cost:
-		log_message("[color=red]灵气不足，无法升级洞府！[/color]")
+	var ore_cost = int(100 * pow(2, cave_level))
+	var wood_cost = int(100 * pow(2, cave_level))
+	if spirit_ore < ore_cost or spirit_wood < wood_cost:
+		log_message("[color=red]灵矿或灵木不足，无法升级洞府！[/color]")
 		return
-	spiritual_energy -= cost
+	spirit_ore -= ore_cost
+	spirit_wood -= wood_cost
 	cave_level += 1
 	log_message("[color=green]洞府升至 " + str(cave_level) + " 级！所有建筑效果提升[/color]")
 	recalc_cave_bonuses()
@@ -2414,28 +2493,126 @@ func _on_building_action(bid: String):
 	var level = building.level
 	var unlocked = building.unlocked
 	var cost = $PanelCave.get_upgrade_cost(bid) if unlocked else defs.base_cost
+	var currency = _get_building_currency(bid)
 
-	if spiritual_energy < cost:
-		log_message("[color=red]灵气不足！[/color]")
-		return
-
+	# 解锁：消耗灵气，即时解锁
 	if not unlocked:
+		if spiritual_energy < cost:
+			log_message("[color=red]灵气不足！[/color]")
+			return
 		if realm_level < defs.unlock_realm:
 			var realm_name = realms[defs.unlock_realm - 1]['name']
 			log_message("[color=red]境界不足！需要达到" + realm_name + "才能解锁" + defs.name + "[/color]")
 			return
+		spiritual_energy -= cost
 		building.unlocked = true
 		building.level = 1
 		log_message("[color=green]解锁" + defs.name + "！[/color]")
-	elif level < defs.max_level:
-		building.level += 1
-		log_message("[color=cyan]" + defs.name + "升至 " + str(building.level) + " 级[/color]")
-	else:
+		recalc_cave_bonuses()
+		recalc_mana_per_sec()
+		refresh_cave()
 		return
 
-	spiritual_energy -= cost
-	recalc_cave_bonuses()
-	recalc_mana_per_sec()
+	# 升级：耗时制，先扣资源再等待（超出上限则进入排队）
+	if defs.max_level >= 0 and level >= defs.max_level:
+		return
+	if building.get('upgrading', false):
+		return
+	if cave_upgrade_queue.has(bid):
+		return
+	if currency == 'energy':
+		if spiritual_energy < cost:
+			log_message("[color=red]灵气不足！[/color]")
+			return
+		spiritual_energy -= cost
+	elif currency == 'ore':
+		if spirit_ore < cost:
+			log_message("[color=red]灵矿不足！[/color]")
+			return
+		spirit_ore -= cost
+	elif currency == 'wood':
+		if spirit_wood < cost:
+			log_message("[color=red]灵木不足！[/color]")
+			return
+		spirit_wood -= cost
+	else:
+		if spirit_ore < cost or spirit_wood < cost:
+			log_message("[color=red]灵矿或灵木不足！[/color]")
+			return
+		spirit_ore -= cost
+		spirit_wood -= cost
+	var dur = _get_upgrade_duration(bid, level)
+	building['upgrade_remaining'] = dur
+	building['upgrade_duration'] = dur
+	if _active_upgrade_count() < cave_upgrade_limit:
+		building['upgrading'] = true
+		building['queued'] = false
+		log_message("[color=cyan]" + defs.name + " 开始升级（耗时 " + str(int(dur)) + " 秒）[/color]")
+	else:
+		building['queued'] = true
+		cave_upgrade_queue.append(bid)
+		log_message("[color=cyan]" + defs.name + " 已加入升级队列（当前第 " + str(cave_upgrade_queue.size()) + " 位）[/color]")
+	refresh_cave()
+
+func _active_upgrade_count() -> int:
+	var n := 0
+	for bid in cave_buildings:
+		if cave_buildings[bid].get('upgrading', false):
+			n += 1
+	return n
+
+## 空槽时从队列头部提拔建筑开始升级
+func _promote_cave_queue():
+	var promoted := false
+	while cave_upgrade_queue.size() > 0 and _active_upgrade_count() < cave_upgrade_limit:
+		var bid = cave_upgrade_queue.pop_front()
+		var b = cave_buildings.get(bid)
+		if b == null:
+			continue
+		b['queued'] = false
+		b['upgrading'] = true
+		log_message("[color=cyan]" + $PanelCave.BUILDING_DEFS.get(bid, {}).get('name', bid) + " 开始升级[/color]")
+		promoted = true
+	if promoted:
+		refresh_cave()
+
+## 旧存档可能有多个建筑同时在升级：超限者降级为排队，并同步 queued 标志
+func _reconcile_cave_queue():
+	for bid in cave_upgrade_queue:
+		if cave_buildings.has(bid):
+			cave_buildings[bid]['queued'] = true
+	while _active_upgrade_count() > cave_upgrade_limit:
+		for bid in cave_buildings:
+			var b = cave_buildings[bid]
+			if b.get('upgrading', false):
+				b['upgrading'] = false
+				b['queued'] = true
+				cave_upgrade_queue.append(bid)
+				break
+
+func _on_cancel_upgrade(bid: String):
+	var idx = cave_upgrade_queue.find(bid)
+	if idx < 0:
+		return
+	var b = cave_buildings.get(bid)
+	if b == null:
+		cave_upgrade_queue.remove_at(idx)
+		return
+	var cost = $PanelCave.get_upgrade_cost(bid)
+	var currency = _get_building_currency(bid)
+	match currency:
+		'energy':
+			spiritual_energy += cost
+		'ore':
+			spirit_ore += cost
+		'wood':
+			spirit_wood += cost
+		_:
+			spirit_ore += cost
+			spirit_wood += cost
+	cave_upgrade_queue.remove_at(idx)
+	b['queued'] = false
+	log_message("[color=#ffcc88]" + $PanelCave.BUILDING_DEFS.get(bid, {}).get('name', bid) + " 已取消排队，资源已退还[/color]")
 	refresh_cave()
 
 func _on_craft_pill_by_name(recipe_name: String):

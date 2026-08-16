@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://bld_herb_garden"]
+[gd_scene load_steps=2 format=3 uid="uid://bld_spirit_mine"]
 
-[ext_resource type="Script" path="res://scripts/buildings/herb_garden_panel.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/buildings/spirit_mine_panel.gd" id="1_script"]
 
-[node name="HerbGardenPanel" type="PanelContainer"]
+[node name="SpiritMinePanel" type="PanelContainer"]
 visible = false
 layout_mode = 1
 anchors_preset = 15
@@ -29,7 +29,7 @@ theme_override_font_sizes/font_size = 14
 layout_mode = 2
 size_flags_horizontal = 3
 horizontal_alignment = 1
-text = "-- 灵药圃 --"
+text = "-- 灵矿场 --"
 theme_override_font_sizes/font_size = 16
 
 [node name="Separator" type="HSeparator" parent="VBox"]

@@ -130,3 +130,47 @@ static func shop_card_color(owned: bool, affordable: bool) -> Color:
 		return Color("#161C22")
 	else:
 		return Color("#1C1212")
+
+# =====================================================================
+# 禁用标识组件
+# =====================================================================
+
+static var _bold_font: Font = null
+
+## 粗体系统字体：用于「禁」字等需要加粗的强调文本。
+## 桌面/移动端优先系统加粗字体，找不到时回退到常规字重。
+static func bold_font() -> Font:
+	if _bold_font == null:
+		var sf := SystemFont.new()
+		sf.font_weight = 700
+		sf.font_names = PackedStringArray([
+			"Microsoft YaHei Bold", "Microsoft YaHei UI Bold", "SimHei",
+			"Noto Sans CJK SC Bold", "PingFang SC Semibold",
+		])
+		_bold_font = sf
+	return _bold_font
+
+## 禁用标识：红底圆形 + 粗体「禁」字（替换历史 lock 图片）。
+## 返回一个 Control，可 add_child 到任意按钮/卡片上作为角标；已设 MOUSE_FILTER_IGNORE 不挡点击。
+static func forbid_badge(size: int = 16) -> Control:
+	var badge := Control.new()
+	badge.custom_minimum_size = Vector2(size, size)
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var circle := Panel.new()
+	circle.set_anchors_preset(Control.PRESET_FULL_RECT)
+	circle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = COLOR_DANGER
+	sb.set_corner_radius_all(size / 2)
+	circle.add_theme_stylebox_override("panel", sb)
+	badge.add_child(circle)
+	var lab := Label.new()
+	lab.text = "禁"
+	lab.set_anchors_preset(Control.PRESET_FULL_RECT)
+	lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lab.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lab.add_theme_color_override("font_color", Color.WHITE)
+	lab.add_theme_font_size_override("font_size", max(9, size - 6))
+	lab.add_theme_font_override("font", bold_font())
+	badge.add_child(lab)
+	return badge

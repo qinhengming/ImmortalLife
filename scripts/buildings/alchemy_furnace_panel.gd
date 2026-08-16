@@ -6,6 +6,8 @@ const BID = "alchemy_furnace"
 
 var _building: Dictionary = {}
 var _energy: float = 0.0
+var _ore: float = 0.0
+var _wood: float = 0.0
 var _recipes: Array = []
 var _pills: Dictionary = {}
 var _current_tab: String = "craft"
@@ -36,9 +38,11 @@ signal building_action_requested(bid: String)
 signal equip_furnace_requested(slot_index: int, inventory_index: int)
 signal unequip_furnace_requested(slot_index: int)
 
-func set_state(building: Dictionary, energy: float, recipes: Array, pills: Dictionary, furnace_inv: Array = [], equipped_furns: Array = []):
+func set_state(building: Dictionary, energy: float, recipes: Array, pills: Dictionary, furnace_inv: Array = [], equipped_furns: Array = [], ore: float = 0.0, wood: float = 0.0):
 	_building = building.duplicate()
 	_energy = energy
+	_ore = ore
+	_wood = wood
 	_recipes = recipes
 	_pills = pills.duplicate()
 	_furnace_inventory = furnace_inv.duplicate()
@@ -538,7 +542,6 @@ func _show_qty_summary(label: Label, count: int):
 
 func _build_furnace_slots(list: VBoxContainer):
 	var level = _building.get('level', 0)
-	var max_lv = 5
 	var max_slots = _get_max_slots()
 	var bonuses = _get_bonuses()
 
@@ -548,7 +551,7 @@ func _build_furnace_slots(list: VBoxContainer):
 	iv.add_theme_constant_override("separation", 4)
 	info.add_child(iv)
 
-	iv.add_child(_lbl("炼丹房  Lv." + str(level) + "/" + str(max_lv), Color(1.0, 0.6, 0.2), 18))
+	iv.add_child(_lbl("炼丹房  Lv." + str(level) + "（无上限）", Color(1.0, 0.6, 0.2), 18))
 	iv.add_child(_wlbl("安装丹炉提升炼制效果，等级越高可安装越多丹炉", Color(0.7, 0.7, 0.8), 11))
 
 	var effects = ""
@@ -560,14 +563,17 @@ func _build_furnace_slots(list: VBoxContainer):
 	effects += "成功率" + str(int(total_success * 100)) + "%  "
 	iv.add_child(_lbl("合计加成：" + effects, Color(0.4, 0.9, 0.5), 12))
 
-	if level >= max_lv:
-		iv.add_child(_lbl("已升至满级", Color(0.4, 0.8, 0.4), 13))
+	if _building.get('upgrading', false):
+		if _building.get('queued', false):
+			iv.add_child(_lbl("排队中…", Color(0.5, 0.55, 0.7), 13))
+		else:
+			iv.add_child(_lbl("升级中…", Color(0.8, 0.6, 0.3), 13))
 	else:
 		var cost = int(1000 * pow(2.0, level))
-		var can = _energy >= cost
+		var can = _ore >= cost and _wood >= cost
 		var row = HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
-		row.add_child(_lbl("升级消耗：" + _fmt(cost) + " 灵气", Color(0.7, 0.7, 0.8), 12))
+		row.add_child(_lbl("升级消耗：" + _fmt(cost) + " 灵矿 + " + _fmt(cost) + " 灵木", Color(0.7, 0.7, 0.8), 12))
 		var btn = Button.new()
 		btn.text = "升级"
 		btn.add_theme_font_size_override("font_size", 12)

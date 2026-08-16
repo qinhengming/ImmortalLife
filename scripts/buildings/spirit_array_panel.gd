@@ -6,6 +6,8 @@ const BID = "spirit_array"
 
 var _building: Dictionary = {}
 var _energy: float = 0.0
+var _ore: float = 0.0
+var _wood: float = 0.0
 var _learned_arrays: Array = []
 var _active_array: String = ""
 var _shop_arrays: Array = []
@@ -20,9 +22,11 @@ signal set_array_requested(array_name: String)
 const TRIGRAM_ORDER = ['☰', '☱', '☲', '☳', '☴', '☵', '☶', '☷']
 const TRIGRAM_NAMES = {'☰': '乾', '☱': '兑', '☲': '离', '☳': '震', '☴': '巽', '☵': '坎', '☶': '艮', '☷': '坤'}
 
-func set_state(building: Dictionary, energy: float, learned_arrs: Array = [], active_arr: String = "", shop_arrs: Array = []):
+func set_state(building: Dictionary, energy: float, learned_arrs: Array = [], active_arr: String = "", shop_arrs: Array = [], ore: float = 0.0, wood: float = 0.0):
 	_building = building.duplicate()
 	_energy = energy
+	_ore = ore
+	_wood = wood
 	_learned_arrays = learned_arrs
 	_active_array = active_arr
 	_shop_arrays = shop_arrs
@@ -111,7 +115,6 @@ func refresh():
 		c.queue_free()
 
 	var level = _building.get('level', 0)
-	var max_lv = 10
 
 	# ========== 八卦图区域 ==========
 	var bagua_control = Control.new()
@@ -222,19 +225,22 @@ func refresh():
 	iv.add_theme_constant_override("separation", 6)
 	info.add_child(iv)
 
-	iv.add_child(_lbl("聚灵阵  Lv." + str(level) + "/" + str(max_lv), Color(0.3, 0.8, 1.0), 18))
+	iv.add_child(_lbl("聚灵阵  Lv." + str(level) + "（无上限）", Color(0.3, 0.8, 1.0), 18))
 	iv.add_child(_lbl("汇聚天地灵气，提升修炼效率", Color(0.7, 0.7, 0.8), 12))
 	iv.add_child(_lbl("效果：每级提升洞府效率10%", Color(0.4, 0.9, 0.5), 12))
 	iv.add_child(_lbl("当前加成：洞府效率 +" + str(level * 10) + "%", Color(0.9, 0.75, 0.3), 13))
 
-	if level >= max_lv:
-		iv.add_child(_lbl("已升至满级", Color(0.4, 0.8, 0.4), 13))
+	if _building.get('upgrading', false):
+		if _building.get('queued', false):
+			iv.add_child(_lbl("排队中…", Color(0.5, 0.55, 0.7), 13))
+		else:
+			iv.add_child(_lbl("升级中…", Color(0.8, 0.6, 0.3), 13))
 	else:
 		var cost = int(500 * pow(1.5, level))
-		var can = _energy >= cost
+		var can = _ore >= cost and _wood >= cost
 		var row = HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
-		row.add_child(_lbl("升级消耗：" + _fmt(cost) + " 灵气", Color(0.7, 0.7, 0.8), 12))
+		row.add_child(_lbl("升级消耗：" + _fmt(cost) + " 灵矿 + " + _fmt(cost) + " 灵木", Color(0.7, 0.7, 0.8), 12))
 		var btn = Button.new()
 		btn.text = "升级"
 		btn.add_theme_font_size_override("font_size", 12)

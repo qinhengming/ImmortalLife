@@ -55,6 +55,7 @@ toggle_mode = true
 layout_mode = 2
 size_flags_vertical = 3
 size_flags_stretch_ratio = 3.0
+horizontal_scroll_mode = 0
 
 [node name="ItemList" type="VBoxContainer" parent="VBox/ScrollList"]
 layout_mode = 2
