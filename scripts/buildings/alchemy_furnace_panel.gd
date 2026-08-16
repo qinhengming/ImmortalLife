@@ -1,5 +1,7 @@
 extends PanelContainer
 
+const UI := preload("res://scripts/ui_common.gd")
+
 const BID = "alchemy_furnace"
 
 var _building: Dictionary = {}
@@ -43,44 +45,19 @@ func set_state(building: Dictionary, energy: float, recipes: Array, pills: Dicti
 	_equipped_furnaces = equipped_furns.duplicate()
 
 func _card_bg(color: Color = Color(0.1, 0.12, 0.18)) -> StyleBoxFlat:
-	var s = StyleBoxFlat.new()
-	s.bg_color = color
-	s.corner_radius_top_left = 6
-	s.corner_radius_top_right = 6
-	s.corner_radius_bottom_left = 6
-	s.corner_radius_bottom_right = 6
-	s.content_margin_left = 12
-	s.content_margin_right = 12
-	s.content_margin_top = 8
-	s.content_margin_bottom = 8
-	return s
+	return UI.card_bg(color, 6)
 
 func _lbl(text: String, color: Color = Color(0.9, 0.9, 1.0), size: int = 12) -> Label:
-	var l = Label.new()
-	l.text = text
-	l.add_theme_color_override("font_color", color)
-	l.add_theme_font_size_override("font_size", size)
-	return l
+	return UI.lbl(text, color, size)
 
 func _wlbl(text: String, color: Color = Color(0.9, 0.9, 1.0), size: int = 12) -> Label:
-	var l = _lbl(text, color, size)
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	return l
+	return UI.wlbl(text, color, size)
 
 func _fmt(n: float) -> String:
-	return _format_big(n)
-
-const BIG_UNITS = ['', '万', '亿', '兆', '京', '垓', '秭', '穰', '沟', '涧', '正', '载', '极']
+	return UI.format_big(n)
 
 func _format_big(n: float) -> String:
-	if n < 10000:
-		return str(int(n))
-	var val = n
-	var unit_idx = 0
-	while val >= 10000 and unit_idx < BIG_UNITS.size() - 1:
-		val /= 10000.0
-		unit_idx += 1
-	return str(val).pad_decimals(1) + BIG_UNITS[unit_idx]
+	return UI.format_big(n)
 
 func _get_max_slots() -> int:
 	var level = _building.get('level', 0)

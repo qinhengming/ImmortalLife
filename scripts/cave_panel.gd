@@ -1,5 +1,7 @@
 extends PanelContainer
 
+const UI := preload("res://scripts/ui_common.gd")
+
 var cave_level: int = 1
 var cave_buildings: Dictionary = {}
 
@@ -108,45 +110,17 @@ func set_state(level: int, buildings: Dictionary, energy: float, realm_lv: int, 
 	_equipped_furnaces = equipped_furns.duplicate()
 
 func _make_card_bg(color: Color, border: Color = Color(0,0,0,0)) -> StyleBoxFlat:
-	var s = StyleBoxFlat.new()
-	s.bg_color = color
-	if border.a > 0:
-		s.border_width_left = 2
-		s.border_width_right = 2
-		s.border_width_top = 2
-		s.border_width_bottom = 2
-		s.border_color = border
-	s.corner_radius_top_left = 6
-	s.corner_radius_top_right = 6
-	s.corner_radius_bottom_left = 6
-	s.corner_radius_bottom_right = 6
-	s.content_margin_left = 12
-	s.content_margin_right = 12
-	s.content_margin_top = 8
-	s.content_margin_bottom = 8
-	return s
+	# 统一到 UI 规范：圆角6、内边距10/6
+	return UI.card_bg(color, 6, border)
 
 func _label(text: String, color: Color = Color(0.9, 0.9, 1.0), size: int = 12) -> Label:
-	var l = Label.new()
-	l.text = text
-	l.add_theme_color_override("font_color", color)
-	l.add_theme_font_size_override("font_size", size)
-	return l
+	return UI.lbl(text, color, size)
 
 func _format_num(n: float) -> String:
-	return _format_big(n)
-
-const BIG_UNITS = ['', '万', '亿', '兆', '京', '垓', '秭', '穰', '沟', '涧', '正', '载', '极']
+	return UI.format_big(n)
 
 func _format_big(n: float) -> String:
-	if n < 10000:
-		return str(int(n))
-	var val = n
-	var unit_idx = 0
-	while val >= 10000 and unit_idx < BIG_UNITS.size() - 1:
-		val /= 10000.0
-		unit_idx += 1
-	return str(val).pad_decimals(1) + BIG_UNITS[unit_idx]
+	return UI.format_big(n)
 
 func _update_visibility():
 	var show_overview = (_current_view == "overview")
@@ -246,9 +220,9 @@ func _build_building_card(list: VBoxContainer, bid: String):
 
 	var card = PanelContainer.new()
 	if unlocked:
-		card.add_theme_stylebox_override("panel", _make_card_bg(Color(0.1, 0.13, 0.2), defs.color))
+		card.add_theme_stylebox_override("panel", _make_card_bg(UI.COLOR_CARD, defs.color))
 	else:
-		card.add_theme_stylebox_override("panel", _make_card_bg(Color(0.08, 0.08, 0.1)))
+		card.add_theme_stylebox_override("panel", _make_card_bg(UI.COLOR_CARD_DARK))
 
 	var main_vbox = VBoxContainer.new()
 	main_vbox.add_theme_constant_override("separation", 4)
@@ -365,4 +339,5 @@ func _ready():
 			panel.unequip_furnace_requested.connect(func(slot_idx: int): unequip_furnace_requested.emit(slot_idx))
 
 		if bid == "spirit_array":
+			panel.set_array_requested.connect(func(arr_name: String): set_array_requested.emit(arr_name))
 			panel.set_array_requested.connect(func(arr_name: String): set_array_requested.emit(arr_name))

@@ -1,5 +1,7 @@
 extends PanelContainer
 
+const UI := preload("res://scripts/ui_common.gd")
+
 signal back_requested()
 signal comprehend_requested(tech_id: String)
 
@@ -114,30 +116,10 @@ func set_state(data: Dictionary):
 	_comprehension_time_total = data.get("comprehension_time_total", 0.0)
 
 func _make_card_bg(color: Color, border: Color = Color(0, 0, 0, 0)) -> StyleBoxFlat:
-	var s = StyleBoxFlat.new()
-	s.bg_color = color
-	if border.a > 0:
-		s.border_width_left = 1
-		s.border_width_right = 1
-		s.border_width_top = 1
-		s.border_width_bottom = 1
-		s.border_color = border
-	s.corner_radius_top_left = 5
-	s.corner_radius_top_right = 5
-	s.corner_radius_bottom_left = 5
-	s.corner_radius_bottom_right = 5
-	s.content_margin_left = 10
-	s.content_margin_right = 10
-	s.content_margin_top = 6
-	s.content_margin_bottom = 6
-	return s
+	return UI.card_bg(color, 6, border)
 
 func _pl(text: String, color: Color = Color(0.9, 0.9, 1.0), font_size: int = 13) -> Label:
-	var label = Label.new()
-	label.text = text
-	label.add_theme_color_override("font_color", color)
-	label.add_theme_font_size_override("font_size", font_size)
-	return label
+	return UI.lbl(text, color, font_size)
 
 func _calc_total_stats(tech_id: String, level: int) -> Dictionary:
 	var defs = TECHNIQUE_DEFS[tech_id]

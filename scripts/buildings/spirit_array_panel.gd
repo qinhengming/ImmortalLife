@@ -1,5 +1,7 @@
 extends PanelContainer
 
+const UI := preload("res://scripts/ui_common.gd")
+
 const BID = "spirit_array"
 
 var _building: Dictionary = {}
@@ -32,39 +34,13 @@ func _get_array_data(array_name: String) -> Dictionary:
 	return {}
 
 func _card_bg(color: Color = Color(0.1, 0.12, 0.18), border: Color = Color(0, 0, 0, 0)) -> StyleBoxFlat:
-	var s = StyleBoxFlat.new()
-	s.bg_color = color
-	if border.a > 0:
-		s.border_width_left = 2
-		s.border_width_right = 2
-		s.border_width_top = 2
-		s.border_width_bottom = 2
-		s.border_color = border
-	s.corner_radius_top_left = 6
-	s.corner_radius_top_right = 6
-	s.corner_radius_bottom_left = 6
-	s.corner_radius_bottom_right = 6
-	s.content_margin_left = 12
-	s.content_margin_right = 12
-	s.content_margin_top = 8
-	s.content_margin_bottom = 8
-	return s
+	return UI.card_bg(color, 6, border)
 
 func _lbl(text: String, color: Color = Color(0.9, 0.9, 1.0), size: int = 12) -> Label:
-	var l = Label.new()
-	l.text = text
-	l.add_theme_color_override("font_color", color)
-	l.add_theme_font_size_override("font_size", size)
-	return l
+	return UI.lbl(text, color, size)
 
 func _fmt(n: float) -> String:
-	var s = str(int(n))
-	var r = ""
-	for i in range(s.length()):
-		if i > 0 and (s.length() - i) % 3 == 0:
-			r += ","
-		r += s[i]
-	return r
+	return UI.format_num(n)
 
 # ==================== 八卦图绘制 ====================
 
@@ -382,10 +358,10 @@ func _make_select_card(array_name: String, display_name: String, desc: String, a
 		s.border_width_top = 1
 		s.border_width_bottom = 1
 		s.border_color = Color(0.2, 0.2, 0.3)
-	s.corner_radius_top_left = 5
-	s.corner_radius_top_right = 5
-	s.corner_radius_bottom_left = 5
-	s.corner_radius_bottom_right = 5
+	s.corner_radius_top_left = 6
+	s.corner_radius_top_right = 6
+	s.corner_radius_bottom_left = 6
+	s.corner_radius_bottom_right = 6
 	s.content_margin_left = 10
 	s.content_margin_right = 10
 	s.content_margin_top = 6

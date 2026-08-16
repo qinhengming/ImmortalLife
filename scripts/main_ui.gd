@@ -1,5 +1,7 @@
 extends Control
 
+const UI := preload("res://scripts/ui_common.gd")
+
 var spiritual_energy: float = 0.0
 var mana_per_sec: float = 10.0
 var realm: String = '练气一层'
@@ -961,38 +963,10 @@ func _has_tiangang_max_level() -> bool:
 	return level >= defs.levels.size()
 
 func _format_num(n: float) -> String:
-	var s = str(int(n))
-	var result = ""
-	for i in range(s.length()):
-		if i > 0 and (s.length() - i) % 3 == 0:
-			result += ","
-		result += s[i]
-	return result
-
-const BIG_UNITS = ['', '万', '亿', '兆', '京', '垓', '秭', '穰', '沟', '涧', '正', '载', '极']
+	return UI.format_num(n)
 
 func _format_big(n: float) -> String:
-	if n < 10000:
-		return _format_num(n)
-	var val = n
-	var unit_idx = 0
-	while val >= 10000 and unit_idx < BIG_UNITS.size() - 1:
-		val /= 10000.0
-		unit_idx += 1
-	if val >= 10000:
-		val /= 10000.0
-		unit_idx += 1
-	var s = str(val)
-	var dot = s.find(".")
-	if dot > 0:
-		if dot >= 4:
-			s = s.substr(0, 4)
-		else:
-			s = s.substr(0, min(s.length(), dot + 2))
-	else:
-		if s.length() > 4:
-			s = s.substr(0, 4)
-	return s + BIG_UNITS[unit_idx]
+	return UI.format_big(n)
 
 func _num_to_chinese(n: int) -> String:
 	var digits = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"]
@@ -2478,13 +2452,13 @@ func _on_craft_pill_by_name(recipe_name: String):
 			spiritual_energy -= actual_cost
 
 			if randf() > success_chance:
-				log_message("[color=red]炼制失败！" + recipe_name + " 炼制失败（成功率" + str(int(success_chance * 100)) + "%），材料损耗[/color]")
+				log_message("[color=red]炼制失败，" + recipe_name + " 炼制失败（成功率" + str(int(success_chance * 100)) + "%），材料损坏[/color]")
 			else:
 				if pill_inventory.has(recipe_name):
 					pill_inventory[recipe_name] += 1
 				else:
 					pill_inventory[recipe_name] = 1
-				log_message("[color=green]炼制成功：" + recipe_name + "（减免后消耗" + str(actual_cost) + "灵）[/color]")
+				log_message("[color=green]炼制成功，" + recipe_name + "（减免后消耗" + str(actual_cost) + "灵气）[/color]")
 			refresh_cave()
 			if $PanelInventory.visible: _refresh_inventory()
 			return

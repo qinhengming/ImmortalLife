@@ -1,5 +1,7 @@
 extends PanelContainer
 
+const UI := preload("res://scripts/ui_common.gd")
+
 signal back_requested()
 signal activate_dharma_requested(dharma_id: String)
 signal synthesize_dharma_requested(grade: int)
@@ -709,10 +711,4 @@ func _build_dharma_card(dharma: Dictionary, is_active: bool) -> PanelContainer:
 	return card
 
 func _format_num(n: float) -> String:
-	var s = str(int(n))
-	var result = ""
-	for i in range(s.length()):
-		if i > 0 and (s.length() - i) % 3 == 0:
-			result += ","
-		result += s[i]
-	return result
+	return UI.format_num(n)

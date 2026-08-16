@@ -1,5 +1,7 @@
 extends PanelContainer
 
+const UI := preload("res://scripts/ui_common.gd")
+
 signal back_requested()
 signal buy_skill_requested(skill: Dictionary)
 signal buy_recipe_requested(recipe: Dictionary)
@@ -96,17 +98,8 @@ func _ready():
 	$VBox/HBox/LeftMenu.add_child(btn_test)
 
 
-const BIG_UNITS = ['', '万', '亿', '兆', '京', '垓', '秭', '穰', '沟', '涧', '正', '载', '极']
-
 func _format_num(n: float) -> String:
-	if n < 10000:
-		return str(int(n))
-	var val = n
-	var unit_idx = 0
-	while val >= 10000 and unit_idx < BIG_UNITS.size() - 1:
-		val /= 10000.0
-		unit_idx += 1
-	return str(val).pad_decimals(1) + BIG_UNITS[unit_idx]
+	return UI.format_big(n)
 
 
 func _make_card_bg(owned: bool, affordable: bool) -> StyleBoxFlat:
@@ -117,10 +110,10 @@ func _make_card_bg(owned: bool, affordable: bool) -> StyleBoxFlat:
 		style.bg_color = Color(0.14, 0.18, 0.16)
 	else:
 		style.bg_color = Color(0.19, 0.13, 0.13)
-	style.corner_radius_top_left = 5
-	style.corner_radius_top_right = 5
-	style.corner_radius_bottom_left = 5
-	style.corner_radius_bottom_right = 5
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_left = 6
+	style.corner_radius_bottom_right = 6
 	style.content_margin_left = 10
 	style.content_margin_right = 10
 	style.content_margin_top = 6
@@ -129,11 +122,7 @@ func _make_card_bg(owned: bool, affordable: bool) -> StyleBoxFlat:
 
 
 func _pl(text: String, color: Color = Color(0.9, 0.9, 1.0), font_size: int = 13) -> Label:
-	var label = Label.new()
-	label.text = text
-	label.add_theme_color_override("font_color", color)
-	label.add_theme_font_size_override("font_size", font_size)
-	return label
+	return UI.lbl(text, color, font_size)
 
 
 func is_skill_learned(name: String) -> bool:

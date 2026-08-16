@@ -1,5 +1,7 @@
 extends PanelContainer
 
+const UI := preload("res://scripts/ui_common.gd")
+
 signal back_requested()
 signal upgrade_talent_requested(tid: String)
 signal select_spirit_root_requested(root_name: String)
@@ -85,19 +87,8 @@ func refresh():
 		var defs = TALENT_DEFS[tid]
 		var level = _talents.get(tid, 0)
 		var maxed = level >= defs.max_level
-
 		var card = PanelContainer.new()
-		var style = StyleBoxFlat.new()
-		style.bg_color = Color(0.12, 0.14, 0.18)
-		style.corner_radius_top_left = 5
-		style.corner_radius_top_right = 5
-		style.corner_radius_bottom_left = 5
-		style.corner_radius_bottom_right = 5
-		style.content_margin_left = 10
-		style.content_margin_right = 10
-		style.content_margin_top = 6
-		style.content_margin_bottom = 6
-		card.add_theme_stylebox_override("panel", style)
+		card.add_theme_stylebox_override("panel", UI.card_bg(UI.COLOR_CARD, 6))
 
 		var hbox = HBoxContainer.new()
 		hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL

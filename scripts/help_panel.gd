@@ -1,5 +1,7 @@
 extends PanelContainer
 
+const UI := preload("res://scripts/ui_common.gd")
+
 signal back_requested()
 
 var _current_cat: String = "realms"
@@ -9,52 +11,56 @@ func set_state(data: Dictionary):
 	_realms = data.get('realms', [])
 
 func _card_bg(color: Color = Color(0.1, 0.12, 0.18)) -> StyleBoxFlat:
-	var s = StyleBoxFlat.new()
-	s.bg_color = color
-	s.corner_radius_top_left = 5
-	s.corner_radius_top_right = 5
-	s.corner_radius_bottom_left = 5
-	s.corner_radius_bottom_right = 5
-	s.content_margin_left = 10
-	s.content_margin_right = 10
-	s.content_margin_top = 6
-	s.content_margin_bottom = 6
-	return s
+
+
+
+
+
+
+
+
+
+
+
+	return UI.card_bg(color, 6)
 
 func _lbl(text: String, color: Color = Color(0.9, 0.9, 1.0), size: int = 12) -> Label:
-	var l = Label.new()
-	l.text = text
-	l.add_theme_color_override("font_color", color)
-	l.add_theme_font_size_override("font_size", size)
-	return l
+
+
+
+
+
+	return UI.lbl(text, color, size)
 
 func _fmt(n: float) -> String:
-	var s = str(int(n))
-	var r = ""
-	for i in range(s.length()):
-		if i > 0 and (s.length() - i) % 3 == 0:
-			r += ","
-		r += s[i]
-	return r
 
-const BIG_UNITS = ['', '万', '亿', '兆', '京', '垓', '秭', '穰', '沟', '涧', '正', '载', '极']
+
+
+
+
+
+
+	return UI.format_num(n)
+
+
 
 func _format_big(n: float) -> String:
-	if n < 10000:
-		return _fmt(n)
-	var val = n
-	var unit_idx = 0
-	while val >= 10000 and unit_idx < BIG_UNITS.size() - 1:
-		val /= 10000.0
-		unit_idx += 1
-	var s = str(val)
-	var dot = s.find(".")
-	if dot > 0:
-		s = s.substr(0, min(s.length(), dot + 2))
-	else:
-		if s.length() > 4:
-			s = s.substr(0, 4)
-	return s + BIG_UNITS[unit_idx]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	return UI.format_big(n)
 
 func _set_category(cat: String):
 	_current_cat = cat

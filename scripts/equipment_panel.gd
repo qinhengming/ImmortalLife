@@ -1,5 +1,7 @@
 extends PanelContainer
 
+const UI := preload("res://scripts/ui_common.gd")
+
 signal back_requested()
 signal unequip_requested(slot: String)
 
@@ -51,11 +53,7 @@ func _ready():
 
 
 func _pl(text: String, color: Color = Color(0.9, 0.9, 1.0), font_size: int = 13) -> Label:
-	var label = Label.new()
-	label.text = text
-	label.add_theme_color_override("font_color", color)
-	label.add_theme_font_size_override("font_size", font_size)
-	return label
+	return UI.lbl(text, color, font_size)
 
 
 func _get_slot_color(slot: String) -> Color:
@@ -367,4 +365,5 @@ func _show_detail_popup(slot: String, item):
 func _close_detail_popup():
 	if _detail_popup:
 		_detail_popup.queue_free()
+		_detail_popup = null
 		_detail_popup = null

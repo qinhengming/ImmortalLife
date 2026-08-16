@@ -1,5 +1,7 @@
 extends PanelContainer
 
+const UI := preload("res://scripts/ui_common.gd")
+
 signal back_requested()
 
 var _player_name: String = ""
@@ -70,37 +72,13 @@ func set_state(data: Dictionary):
 	_attr_defs = data.get('attr_defs', {})
 
 func _make_card(bg: Color) -> PanelContainer:
-	var card = PanelContainer.new()
-	var style = StyleBoxFlat.new()
-	style.bg_color = bg
-	style.corner_radius_top_left = 5
-	style.corner_radius_top_right = 5
-	style.corner_radius_bottom_left = 5
-	style.corner_radius_bottom_right = 5
-	style.content_margin_left = 12
-	style.content_margin_right = 12
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
-	card.add_theme_stylebox_override("panel", style)
-	return card
+	return UI.card(bg)
 
 func _pl(text: String, color: Color = Color(0.9, 0.9, 1.0), font_size: int = 13) -> Label:
-	var label = Label.new()
-	label.text = text
-	label.add_theme_color_override("font_color", color)
-	label.add_theme_font_size_override("font_size", font_size)
-	return label
+	return UI.lbl(text, color, font_size)
 
 func _format_num(n: float) -> String:
-	if n < 10000:
-		return str(int(n))
-	var val = n
-	var unit_idx = 0
-	var units = ['', '万', '亿', '兆', '京', '垓', '秭', '穰', '沟', '涧', '正', '载', '极']
-	while val >= 10000 and unit_idx < units.size() - 1:
-		val /= 10000.0
-		unit_idx += 1
-	return str(val).pad_decimals(1) + units[unit_idx]
+	return UI.format_big(n)
 
 func get_realm_title() -> String:
 	var mr = floor((_realm_level - 1) / 9)
@@ -334,4 +312,5 @@ func refresh():
 signal reincarnation_requested()
 
 func _ready():
+	$VBox/TopBar/BtnBack.pressed.connect(func(): back_requested.emit())
 	$VBox/TopBar/BtnBack.pressed.connect(func(): back_requested.emit())

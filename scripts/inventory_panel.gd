@@ -1,5 +1,7 @@
 extends PanelContainer
 
+const UI := preload("res://scripts/ui_common.gd")
+
 signal back_requested()
 signal use_skill_requested(index: int)
 signal sell_skill_requested(index: int)
@@ -53,38 +55,8 @@ func set_state(data: Dictionary):
 	_sell_ratio = data.get("sell_ratio", 0.5)
 	_realm_level = data.get("realm_level", 1)
 
-func _make_card_bg(color: Color, border: Color = Color(0, 0, 0, 0)) -> StyleBoxFlat:
-	var s = StyleBoxFlat.new()
-	s.bg_color = color
-	if border.a > 0:
-		s.border_width_left = 1
-		s.border_width_right = 1
-		s.border_width_top = 1
-		s.border_width_bottom = 1
-		s.border_color = border
-	s.corner_radius_top_left = 5
-	s.corner_radius_top_right = 5
-	s.corner_radius_bottom_left = 5
-	s.corner_radius_bottom_right = 5
-	s.content_margin_left = 10
-	s.content_margin_right = 10
-	s.content_margin_top = 6
-	s.content_margin_bottom = 6
-	return s
-
-const BIG_UNITS = ['', '万', '亿', '兆', '京', '垓', '秭', '穰', '沟', '涧', '正', '载', '极']
-
-func _format_num(n) -> String:
-	if n is float:
-		n = int(n)
-	if n < 10000:
-		return str(n)
-	var val = float(n)
-	var unit_idx = 0
-	while val >= 10000 and unit_idx < BIG_UNITS.size() - 1:
-		val /= 10000.0
-		unit_idx += 1
-	return str(val).pad_decimals(1) + BIG_UNITS[unit_idx]
+func _format_num(n: float) -> String:
+	return UI.format_num(n)
 
 func refresh():
 	var list = $VBox/HBox/ScrollList/ItemList

@@ -1,11 +1,11 @@
 extends PanelContainer
 
+const UI := preload("res://scripts/ui_common.gd")
+
 signal back_requested()
 signal building_action_requested(building_id: String)
 signal recruit_disciple_requested()
 signal dismiss_disciple_requested(index: int)
-
-const BIG_UNITS = ['', '万', '亿', '兆', '京', '垓', '秭', '穰', '沟', '涧', '正', '载', '极']
 
 const SECT_BUILDING_DEFS = {
 	"sect_main_hall": {
@@ -93,21 +93,10 @@ var _tab_btn_buildings: Button = null
 var _tab_btn_disciples: Button = null
 
 func _format_num(n: float) -> String:
-	if n < 10000:
-		return str(int(n))
-	var val = n
-	var unit_idx = 0
-	while val >= 10000 and unit_idx < BIG_UNITS.size() - 1:
-		val /= 10000.0
-		unit_idx += 1
-	return str(val).pad_decimals(1) + BIG_UNITS[unit_idx]
+	return UI.format_big(n)
 
 func _pl(text: String, color: Color = Color(0.9, 0.9, 1.0), font_size: int = 13) -> Label:
-	var label = Label.new()
-	label.text = text
-	label.add_theme_color_override("font_color", color)
-	label.add_theme_font_size_override("font_size", font_size)
-	return label
+	return UI.lbl(text, color, font_size)
 
 func set_state(data: Dictionary):
 	_spiritual_energy = data.get('spiritual_energy', 0.0)
@@ -305,10 +294,10 @@ func _make_building_card(bid: String) -> PanelContainer:
 		style.bg_color = Color(0.14, 0.16, 0.18)
 	else:
 		style.bg_color = Color(0.16, 0.13, 0.14)
-	style.corner_radius_top_left = 5
-	style.corner_radius_top_right = 5
-	style.corner_radius_bottom_left = 5
-	style.corner_radius_bottom_right = 5
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_left = 6
+	style.corner_radius_bottom_right = 6
 	style.content_margin_left = 10
 	style.content_margin_right = 10
 	style.content_margin_top = 6
@@ -400,10 +389,10 @@ func _make_disciple_card(index: int) -> PanelContainer:
 	var card = PanelContainer.new()
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.12, 0.14, 0.18)
-	style.corner_radius_top_left = 5
-	style.corner_radius_top_right = 5
-	style.corner_radius_bottom_left = 5
-	style.corner_radius_bottom_right = 5
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_left = 6
+	style.corner_radius_bottom_right = 6
 	style.content_margin_left = 10
 	style.content_margin_right = 10
 	style.content_margin_top = 6

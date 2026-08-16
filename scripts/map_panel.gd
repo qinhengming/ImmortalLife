@@ -1,5 +1,7 @@
 extends PanelContainer
 
+const UI := preload("res://scripts/ui_common.gd")
+
 signal back_requested()
 signal start_battle_requested(map: Dictionary, sub_map: int)
 signal stop_battle_requested()
@@ -52,26 +54,11 @@ func _ready():
 
 
 func _pl(text: String, color: Color = Color(0.9, 0.9, 1.0), font_size: int = 13) -> Label:
-	var label = Label.new()
-	label.text = text
-	label.add_theme_color_override("font_color", color)
-	label.add_theme_font_size_override("font_size", font_size)
-	return label
+	return UI.lbl(text, color, font_size)
 
 
 func _make_card_bg(color: Color) -> PanelContainer:
-	var card = PanelContainer.new()
-	var style = StyleBoxFlat.new()
-	style.bg_color = color
-	style.corner_radius_top_left = 5
-	style.corner_radius_top_right = 5
-	style.corner_radius_bottom_left = 5
-	style.corner_radius_bottom_right = 5
-	style.content_margin_left = 10
-	style.content_margin_right = 10
-	style.content_margin_top = 6
-	style.content_margin_bottom = 6
-	card.add_theme_stylebox_override("panel", style)
+	var card := UI.card(color, Color(0, 0, 0, 0))
 	return card
 
 
